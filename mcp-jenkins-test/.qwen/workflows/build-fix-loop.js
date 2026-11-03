@@ -10,6 +10,10 @@ export const meta = {
   ],
 };
 
+const A = (typeof args === 'string') ? JSON.parse(args) : args;
+const withModel = (o, m) => { if (m) { o.model = m; } return o };
+
+
 const CLASS_SCHEMA = {
   type: 'object',
   properties: {
@@ -22,19 +26,19 @@ const CLASS_SCHEMA = {
   required: ['category', 'summary', 'evidence'],
 };
 
-let maxIter = args.maxIterations;
+let maxIter = A.maxIterations;
 if (maxIter === undefined || maxIter < 1) maxIter = 3;
 if (maxIter > 5) maxIter = 5;
-let build = args.buildNumber;
+let build = A.buildNumber;
 if (build === undefined) build = 1;
-const report = { job: args.jobName, project: args.project, iterations: [], result: 'не запускалось' };
+const report = { job: A.jobName, project: A.project, iterations: [], result: 'не запускалось' };
 
 for (let i = 1; i <= maxIter; i++) {
   phase('Build');
   const trig = await agent(
-    'Цель: запустить сборку и узнать статус. Вызови MCP jenkins-mock -> jenkins_trigger_build с job="' + args.jobName + '", build=' + build +
+    'Цель: запустить сборку и узнать статус. Вызови MCP jenkins-mock -> jenkins_trigger_build с job="' + A.jobName + '", build=' + build +
     ', затем jenkins_get_job_status с теми же job/build. Верни одной строкой итоговый статус (SUCCESS или FAILURE). Только эти два вызова.',
-    { label: 'build:' + i });
+    withModel({ label: 'build:' + i, effort: 'low' }, A.modelFast));
   if (trig === null) { report.result = 'агент сборки упал на итерации ' + i; break; }
   const status = /SUCCESS/i.test(String(trig)) ? 'SUCCESS' : 'FAILURE';
   report.iterations.push({ iteration: i, build: build, status: status });
@@ -43,16 +47,16 @@ for (let i = 1; i <= maxIter; i++) {
 
   phase('Triage');
   const tri = await agent(
-    'Цель: классифицировать ошибку упавшей сборки. Вызови jenkins-mock -> jenkins_get_build_log job="' + args.jobName + '" build=' + build + '. ' +
-    'Класс: sonar / компиляция / тесты / инфра / деплой. Укажи файл и строку из лога. Только чтение. Проект: ' + args.project + '.',
-    { label: 'triage:' + i, schema: CLASS_SCHEMA });
+    'Цель: классифицировать ошибку упавшей сборки. Вызови jenkins-mock -> jenkins_get_build_log job="' + A.jobName + '" build=' + build + '. ' +
+    'Класс: sonar / компиляция / тесты / инфра / деплой. Укажи файл и строку из лога. Только чтение. Проект: ' + A.project + '.',
+    withModel({ label: 'triage:' + i, schema: CLASS_SCHEMA, effort: 'high' }, A.modelExpert));
   if (tri === null) { report.result = 'triage-агент упал на итерации ' + i; break; }
   report.iterations[report.iterations.length - 1].triage = tri;
 
   phase('Checks');
   const checks = await parallel([
-    () => agent('Цель: отчёт SonarQube. Вызови MCP sonar-mock -> sonar_get_issues project="' + args.project + '". Верни одной строкой самое критичное (severity + правило + сообщение). Только чтение.', { label: 'check:sonar', effort: 'low' }),
-    () => agent('Цель: отчёт уязвимостей. Вызови MCP vuln-mock -> vuln_get_findings project="' + args.project + '". Верни одной строкой самое критичное (severity + CVE + компонент). Только чтение.', { label: 'check:vuln', effort: 'low' }),
+    () => agent('Цель: отчёт SonarQube. Вызови MCP sonar-mock -> sonar_get_issues project="' + A.project + '". Верни одной строкой самое критичное (severity + правило + сообщение). Только чтение.', withModel({ label: 'check:sonar', effort: 'low' }, A.modelFast)),
+    () => agent('Цель: отчёт уязвимостей. Вызови MCP vuln-mock -> vuln_get_findings project="' + A.project + '". Верни одной строкой самое критичное (severity + CVE + компонент). Только чтение.', withModel({ label: 'check:vuln', effort: 'low' }, A.modelFast)),
   ]);
   const sonarTop = checks[0] === null ? 'нет данных' : String(checks[0]).slice(0, 200);
   const vulnTop = checks[1] === null ? 'нет данных' : String(checks[1]).slice(0, 200);
@@ -69,7 +73,7 @@ for (let i = 1; i <= maxIter; i++) {
     'Контекст (НЕ исправлять в этом цикле): sonar: ' + sonarTop + ' | уязвимости: ' + vulnTop + '. ' +
     'Границы: только файл из диагноза. Не заявляй успех без вывода тестов. ' +
     'Верни: суть правки + последние строки прогона тестов.',
-    { label: 'fix:' + i, isolation: 'worktree' });
+    withModel({ label: 'fix:' + i, isolation: 'worktree', effort: 'high' }, A.modelExpert));
   if (fix === null) { report.result = 'fix-агент упал на итерации ' + i; break; }
   report.iterations[report.iterations.length - 1].fix = String(fix).slice(0, 500);
   build = build + 1;

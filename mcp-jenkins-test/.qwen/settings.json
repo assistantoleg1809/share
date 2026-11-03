@@ -18,5 +18,6 @@
         "mcp/vuln-mock/server.js"
       ]
     }
-  }
+  },
+  "$version": 4
 }

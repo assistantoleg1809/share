@@ -8,6 +8,10 @@ export const meta = {
   ],
 };
 
+const A = (typeof args === 'string') ? JSON.parse(args) : args;
+const withModel = (o, m) => { if (m) { o.model = m; } return o };
+
+
 const CLASS_SCHEMA = {
   type: 'object',
   properties: {
@@ -36,28 +40,28 @@ const MASS_SCHEMA = {
 phase('Triage');
 const cls = await agent(
   'Цель: прочитать лог упавшей сборки и классифицировать ошибку. ' +
-  'Вызови MCP-инструмент jenkins-mock -> jenkins_get_build_log с job="' + args.jobName + '", build=' + args.buildNumber + '. ' +
+  'Вызови MCP-инструмент jenkins-mock -> jenkins_get_build_log с job="' + A.jobName + '", build=' + A.buildNumber + '. ' +
   'Классифицируй: sonar / компиляция / тесты / инфра / деплой. Укажи файл и строку, если есть, и процитируй ключевую строку лога. ' +
-  'Ограничения: только чтение, никаких правок. Проект: ' + args.project + '.',
-  { label: 'triage:log', schema: CLASS_SCHEMA });
+  'Ограничения: только чтение, никаких правок. Проект: ' + A.project + '.',
+  withModel({ label: 'triage:log', schema: CLASS_SCHEMA, effort: 'high' }, A.modelExpert));
 if (cls === null) return { ok: false, error: 'triage-агент не вернул классификацию' };
 
 phase('Known issues');
 const known = await parallel([
   () => agent(
-    'Цель: найти открытые тикеты DevOps-борды ' + args.devopsBoard + ' по ошибке: "' + cls.summary + '" (категория: ' + cls.category + '). ' +
+    'Цель: найти открытые тикеты DevOps-борды ' + A.devopsBoard + ' по ошибке: "' + cls.summary + '" (категория: ' + cls.category + '). ' +
     'В мок-среде опирайся на файл mcp/fixtures/build-deploy-infra-error.log (там перечислены тикеты) и известные тебе типовые проблемы. ' +
     'Формат — по схеме. Только чтение.',
-    { label: 'known:tickets', schema: TICKETS_SCHEMA }),
+    withModel({ label: 'known:tickets', schema: TICKETS_SCHEMA, effort: 'low' }, A.modelFast)),
   () => agent(
     'Цель: определить, массовая ли проблема: сколько тикетов с той же ошибкой "' + cls.summary + '" открыто. ' +
     'Границы: не ищи решение, только массовость. Формат — по схеме.',
-    { label: 'known:mass', schema: MASS_SCHEMA, disallowedTools: ['mcp__sonar-mock'] }),
+    withModel({ label: 'known:mass', schema: MASS_SCHEMA, effort: 'low', disallowedTools: ['mcp__sonar-mock'] }, A.modelFast)),
 ]);
 return {
   ok: true,
-  build: { job: args.jobName, build: args.buildNumber },
-  error: log,
+  build: { job: A.jobName, build: A.buildNumber },
+  error: cls,
   known: {
     tickets: known[0] === null ? null : known[0].tickets,
     mass: known[1],
