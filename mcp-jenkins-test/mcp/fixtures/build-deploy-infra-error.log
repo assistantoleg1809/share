@@ -1,0 +1,6 @@
+Deploying calc-app to staging (job deploy-calc-app #7)
++ kubectl apply -f k8s/
+Error from server (Forbidden): error when creating "k8s/deploy.yaml": namespaces "staging-calc" is forbidden: User "jenkins-ci" cannot create resource in API group "" in the namespace "staging-calc"
+Похожие открытые тикеты DevOps: DEVOPS-4821 (RBAC namespace), DEVOPS-4877 (массовая — 14 дубликатов за неделю)
+Build step 'Deploy' marked build as failure
+Finished: FAILURE
