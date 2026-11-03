@@ -1,0 +1,15 @@
+version: 1
+
+name: share
+status: active
+stage: mvp
+
+hypothesis:
+  state: testing
+  statement: "Проверка гипотезы проекта share"
+
+release:
+  current: null
+  next: v0.1.0
+
+archive: null
