@@ -86,12 +86,16 @@ const FIX = {
   required: ['ok', 'pushed', 'summary'],
 };
 
-const job = args?.job;
+// Headless-запуск передаёт args строкой — нормализуем (урок e2e из mcp-jenkins-test).
+const A = (typeof args === 'string') ? JSON.parse(args) : args;
+const withModel = (o, m) => { if (m) { o.model = m; } return o; };
+
+const job = A?.job;
 if (!job) {
   throw new Error('args.job обязателен, например { job: "app-build", branch: "task/PRJ-1" }');
 }
-const branch = args?.branch;
-const maxAttempts = args?.maxAttempts ?? 3;
+const branch = A?.branch;
+const maxAttempts = A?.maxAttempts ?? 3;
 const MAX_WATCHERS = 8;
 
 const branchLine = branch ? `Ветка: ${branch}.` : 'Ветка: дефолт джобы.';
@@ -100,7 +104,7 @@ phase('MCP check');
 const probe = await agent(
   'Проверь доступность MCP-сервера jenkins по своему шагу 0 (один лёгкий вызов). ' +
     'Сервер отвечает — ok=true. Нет — ok=false, problem и рекомендации.',
-  { agentType: 'build-status', label: 'probe:jenkins', schema: AVAIL, effort: 'low' },
+  withModel({ agentType: 'build-status', label: 'probe:jenkins', schema: AVAIL, effort: 'low' }, A?.modelFast),
 );
 if (probe === null) {
   return {
@@ -125,7 +129,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   phase('Build & watch');
   const trigger = await agent(
     `Запусти сборку джобы ${job}. ${branchLine} Одна попытка, без ретраев. Верни номер сборки и url.`,
-    { agentType: 'build-trigger', label: `trigger:${attempt}`, schema: TRIGGER },
+    withModel({ agentType: 'build-trigger', label: `trigger:${attempt}`, schema: TRIGGER, effort: 'low' }, A?.modelFast),
   );
   if (trigger === null || !trigger.ok) {
     return {
@@ -143,7 +147,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       `Сборка ${job} #${trigger.buildNumber}: наблюдай по своему протоколу ` +
         '(проверка статуса, между проверками sleep 45, бюджет этого захода ~8 минут). ' +
         'Сборка всё ещё идёт — верни state=RUNNING.',
-      { agentType: 'build-status', label: `watch:${attempt}:${watcher}`, schema: STATUS, effort: 'low' },
+      withModel({ agentType: 'build-status', label: `watch:${attempt}:${watcher}`, schema: STATUS, effort: 'low' }, A?.modelFast),
     );
     if (chunk === null) {
       log(`Наблюдатель ${watcher} не завершился — продолжаю следующим`);
@@ -178,7 +182,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       `Первая ошибка: ${status.errorSnippet ?? 'не извлечена'}\n` +
       `Хвост лога:\n${(status.logTail ?? '').slice(0, 4000)}\n` +
       'Разбери причину по своему протоколу (лог Jenkins, Jira DevOps, Confluence, Sonar, Bitbucket) и верни диагноз.',
-    { agentType: 'build-triage', label: `triage:${attempt}`, schema: TRIAGE },
+    withModel({ agentType: 'build-triage', label: `triage:${attempt}`, schema: TRIAGE, effort: 'high' }, A?.modelExpert),
   );
   if (triage === null) {
     return { status: 'TRIAGE_FAILED', attempt, attempts, buildNumber: trigger.buildNumber ?? null };
@@ -199,7 +203,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   const fix = await agent(
     `Сборка ${job} #${trigger.buildNumber} упала. Диагноз: ${triage.category} — ${triage.rootCause}. ` +
       `Подсказка: ${triage.fixHint}. Исправь по своему протоколу: минимальная правка, локальная проверка, commit, push.`,
-    { agentType: 'build-fix', label: `fix:${attempt}`, schema: FIX },
+    withModel({ agentType: 'build-fix', label: `fix:${attempt}`, schema: FIX, effort: 'high' }, A?.modelExpert),
   );
   if (fix === null || !fix.ok || !fix.pushed) {
     phase('Result');

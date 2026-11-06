@@ -1,0 +1,13 @@
+{
+  "project": "calc-app",
+  "issues": [
+    {
+      "key": "AYcalc0001",
+      "severity": "MINOR",
+      "rule": "python:S1006",
+      "message": "Не нужно сравнивать с True/False явно",
+      "component": "e2e/target/app.py",
+      "line": 20
+    }
+  ]
+}

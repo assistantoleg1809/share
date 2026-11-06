@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "jenkins": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/mcp/jenkins/server.js"] },
+    "jira": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/mcp/jira/server.js"] },
+    "confluence": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/mcp/confluence/server.js"] },
+    "sonar": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/mcp/sonar/server.js"] },
+    "bitbucket": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/mcp/bitbucket/server.js"] },
+    "mmap": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/mcp/mmap/server.js"] }
+  }
+}

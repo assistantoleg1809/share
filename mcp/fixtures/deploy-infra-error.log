@@ -1,0 +1,6 @@
+[app-deploy] Деплой #1
+Перенос артефакта на агент deploy-agent-03...
+rsync: write failed on /var/jenkins/workspace/app-deploy/artifact.tar: No space left on device (28)
+ERROR: Не удалось разместить артефакт: место на диске агента исчерпано
+Деплой на этом агенте стабильно падает — см. тикеты команды DevOps
+DEPLOY FAILURE: инфраструктура

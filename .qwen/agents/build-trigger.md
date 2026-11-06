@@ -2,11 +2,13 @@
 name: build-trigger
 description: Запуск сборки Jenkins. Ровно одна попытка, только инструмент запуска — без ретраев и без других действий. Использовать, когда нужно поднять джобу.
 tools:
-  # Разрешён только инструмент запуска сборки. Точное имя возьми из /mcp
-  # для своего сервера jenkins и впиши вместо mcp__jenkins__trigger_build.
+  # Разрешены только инструменты запуска джоб Jenkins. Точные имена возьми
+  # из /mcp для своего сервера и впиши вместо mcp__jenkins__trigger_build
+  # и mcp__jenkins__trigger_deploy.
   - tool_search
   - tool_call
   - mcp__jenkins__trigger_build
+  - mcp__jenkins__trigger_deploy
 ---
 
 # Роль

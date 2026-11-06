@@ -37,6 +37,7 @@ const STATE = {
     specDir: { type: 'string' },
     branch: { type: 'string' },
     prId: { type: ['string', 'number'] },
+    worktreePath: { type: 'string' },
     fixRetries: { type: 'number' },
     lastTick: { type: 'string' },
     lastError: { type: 'string' },
@@ -87,19 +88,6 @@ const SPEC = {
   required: ['ok'],
 };
 
-const DEV = {
-  type: 'object',
-  properties: {
-    ok: { type: 'boolean' },
-    branch: { type: 'string' },
-    prId: { type: ['string', 'number'] },
-    prUrl: { type: 'string' },
-    summary: { type: 'string' },
-    error: { type: 'string' },
-  },
-  required: ['ok', 'branch', 'prId'],
-};
-
 const PR = {
   type: 'object',
   properties: {
@@ -136,10 +124,18 @@ const WRITE = {
   required: ['ok'],
 };
 
-if (!args?.now) {
+// Headless-запуск передаёт args строкой — нормализуем (урок e2e из mcp-jenkins-test).
+const A = (typeof args === 'string') ? JSON.parse(args) : args;
+const withModel = (o, m) => { if (m) { o.model = m; } return o; };
+const field = (text, k) => {
+  const m = String(text).match(new RegExp('^' + k + ':\\s*(.*)$', 'm'));
+  return m === null ? null : m[1].trim();
+};
+
+if (!A?.now) {
   throw new Error('args.now обязателен (ISO-строка текущего времени) — драйвер передаёт его при каждом тике');
 }
-const now = args.now;
+const now = A.now;
 
 const history = (state, event) =>
   (state.history ?? []).concat([{ at: now, event, task: state.task?.key ?? '' }]).slice(-20);
@@ -180,7 +176,7 @@ if (!done && (state.phase === 'IDLE' || !state.phase)) {
       '(открытые / «к выполнению»), максимум 3, по приоритету. Для каждой: key, summary, url, ' +
       'jenkinsJob — если имя джобы сборки видно из задачи, её полей или привязанного проекта. ' +
       'Назначенных задач нет — верни пустой список.',
-    { agentType: 'openspec', label: 'jira:scan', schema: TASKS },
+    withModel({ agentType: 'openspec', label: 'jira:scan', schema: TASKS, effort: 'low' }, A?.modelFast),
   );
   if (scan === null) {
     report = { status: 'ERROR', step: 'jira-scan', message: 'агент скана Jira не завершился' };
@@ -207,7 +203,7 @@ if (!done && state.phase === 'SPEC') {
     `Задача ${state.task.key}: ${state.task.summary}.` +
       (state.task.url ? ` Ссылка: ${state.task.url}.` : '') +
       ' Подготовь OpenSpec-изменение по своему протоколу (шаг 0: jira, confluence, mmap).',
-    { agentType: 'openspec', label: `spec:${key}`, schema: SPEC },
+    withModel({ agentType: 'openspec', label: `spec:${key}`, schema: SPEC, effort: 'high' }, A?.modelExpert),
   );
   if (spec === null || !spec.ok) {
     state.phase = 'SPEC_FAILED';
@@ -232,29 +228,50 @@ if (!done && state.phase === 'SPEC') {
 }
 
 if (!done && state.phase === 'DEV') {
+  // Реализация — в изолированном worktree: основной чекаут не занимается
+  // задачей воркера (боль «бурных дней»: невозможность переключать ветки).
   const dev = await agent(
     `Реализуй задачу ${key} по OpenSpec-каталогу ${state.specDir ?? 'openspec/changes/' + key} ` +
-      '(режим implement + pr): ветка, коммиты, pull request в Bitbucket со ссылкой на Jira.',
-    { agentType: 'implementer', label: `dev:${key}`, schema: DEV },
+      '(режим implement + pr). Ты запущен в свежем git-worktree: работай строго в нём ' +
+      '(pwd покажет путь для отчёта), ветка, коммиты, pull request в Bitbucket со ссылкой на Jira. ' +
+      'Заверши отчёт обязательными строками OK / WORKTREE / BRANCH / PRID / PRURL.',
+    withModel(
+      { agentType: 'implementer', label: `dev:${key}`, isolation: 'worktree', effort: 'high' },
+      A?.modelExpert,
+    ),
   );
-  if (dev === null || !dev.ok) {
+  if (dev === null) {
     state.phase = 'DEV_FAILED';
-    state.lastError = dev === null ? 'агент implementer не завершился' : (dev.error ?? 'неизвестная ошибка');
+    state.lastError = 'агент implementer не завершился';
     state.history = history(state, 'dev-failed');
     report = { status: 'DEV_FAILED', task: key, error: state.lastError };
   } else {
-    state.phase = 'PR_WAIT';
-    state.branch = dev.branch ?? null;
-    state.prId = dev.prId ?? null;
-    state.fixRetries = 0;
-    state.history = history(state, 'pr-opened');
-    report = {
-      status: 'PR_OPEN',
-      task: key,
-      branch: state.branch,
-      prId: state.prId,
-      prUrl: dev.prUrl ?? null,
-    };
+    const devOk = /^true$/i.test(field(dev, 'OK') ?? 'false');
+    const devBranch = field(dev, 'BRANCH');
+    const devPrId = field(dev, 'PRID');
+    const devWorktree = field(dev, 'WORKTREE');
+    if (!devOk || !devBranch || !devPrId) {
+      state.phase = 'DEV_FAILED';
+      state.lastError =
+        'implementer вернул неполный отчёт (нужны строки OK/BRANCH/PRID): ' + String(dev).slice(0, 300);
+      state.history = history(state, 'dev-failed');
+      report = { status: 'DEV_FAILED', task: key, error: state.lastError };
+    } else {
+      state.phase = 'PR_WAIT';
+      state.branch = devBranch;
+      state.prId = devPrId;
+      state.worktreePath = devWorktree && devWorktree.length > 0 ? devWorktree : null;
+      state.fixRetries = 0;
+      state.history = history(state, 'pr-opened');
+      log(`PR ${devPrId} открыт из worktree ${state.worktreePath ?? '?'} (ветка ${devBranch})`);
+      report = {
+        status: 'PR_OPEN',
+        task: key,
+        branch: state.branch,
+        prId: state.prId,
+        prUrl: field(dev, 'PRURL'),
+      };
+    }
   }
   done = true;
 }
@@ -262,7 +279,7 @@ if (!done && state.phase === 'DEV') {
 if (!done && state.phase === 'PR_WAIT') {
   const pr = await agent(
     `Режим check: pull request ${state.prId} (ветка ${state.branch}). Верни состояние и нерешённые замечания.`,
-    { agentType: 'implementer', label: `pr:check:${state.prId}`, schema: PR },
+    withModel({ agentType: 'implementer', label: `pr:check:${state.prId}`, schema: PR, effort: 'low' }, A?.modelFast),
   );
   if (pr === null) {
     state.lastError = 'агент check PR не завершился';
@@ -286,7 +303,13 @@ if (!done && state.phase === 'PR_WAIT') {
       report = { status: 'BUILD_FAILED', task: key, error: state.lastError };
     } else {
       log(`Ветка слита — вызов build-autofix для ${job}`);
-      const build = await workflow('build-autofix', { job, branch: state.branch, maxAttempts: 3 });
+      const build = await workflow('build-autofix', {
+        job,
+        branch: state.branch,
+        maxAttempts: 3,
+        modelFast: A?.modelFast,
+        modelExpert: A?.modelExpert,
+      });
       if (build === null) {
         state.phase = 'BUILD_FAILED';
         state.lastError = 'вложенный workflow build-autofix не стартовал (имя/файл не найдены)';
@@ -316,10 +339,21 @@ if (!done && state.phase === 'PR_WAIT') {
         state.history = history(state, 'pr-stuck');
         report = { status: 'PR_STUCK', task: key, unresolvedCount: unresolved.length };
       } else {
+        const fixOpts = {
+          agentType: 'implementer',
+          label: `pr:fix:${state.prId}:${retries}`,
+          schema: FIXR,
+          effort: 'high',
+        };
+        if (state.worktreePath) {
+          fixOpts.workingDir = state.worktreePath;
+        }
         const fix = await agent(
           `Режим fix: pull request ${state.prId}. Замечания:\n${JSON.stringify(unresolved, null, 2)}\n` +
-            `Устрани каждое и запушь в ${state.branch}.`,
-          { agentType: 'implementer', label: `pr:fix:${state.prId}:${retries}`, schema: FIXR },
+            `Устрани каждое: ответь (add_comment), правка, коммит, пуш в ${state.branch}, замечание закрой ` +
+            'через resolve_comment.' +
+            (state.worktreePath ? ` Работай в worktree ${state.worktreePath}.` : ''),
+          withModel(fixOpts, A?.modelExpert),
         );
         if (fix !== null && fix.ok && fix.pushed) {
           state.fixRetries = 0;
@@ -338,9 +372,19 @@ if (!done && state.phase === 'PR_WAIT') {
 }
 
 if (!done) {
-  // Терминальные фазы: закрываем задачу с записью в историю, следующий тик
-  // возьмёт новую из Jira.
+  // Терминальные фазы: прибираем worktree воркера, закрываем задачу в историю,
+  // следующий тик возьмёт новую из Jira.
   const previousPhase = state.phase ?? 'UNKNOWN';
+  if (state.worktreePath) {
+    const clean = await agent(
+      `Прибери за воркером: из корня репозитория выполни ` +
+        `git worktree remove --force ${state.worktreePath} (каталог работы; ветку не удалять). Верни ok=true.`,
+      { label: 'worktree:cleanup', schema: WRITE },
+    );
+    if (clean === null || !clean.ok) {
+      log(`worktree ${state.worktreePath} не удалён — прибери вручную`);
+    }
+  }
   state = { phase: 'IDLE', history: history(state, `closed:${previousPhase}`) };
   log(`Задача ${key || '?'} закрыта в фазе ${previousPhase} — воркер переходит к скану`);
   report = { status: 'TASK_CLOSED', previousPhase, task: key };
@@ -349,4 +393,24 @@ if (!done) {
 state.lastTick = now;
 phase('Result');
 await saveState(state);
+
+// Звук-уведомление по стандарту Oleg: Tink — завершение, Bottle — нужно внимание.
+const SOUNDS = {
+  DONE: 'Tink.aiff',
+  SPEC_FAILED: 'Bottle.aiff',
+  DEV_FAILED: 'Bottle.aiff',
+  BUILD_FAILED: 'Bottle.aiff',
+  PR_DECLINED: 'Bottle.aiff',
+  PR_STUCK: 'Bottle.aiff',
+};
+const sound = SOUNDS[report.status];
+if (sound) {
+  const beep = await agent(
+    `Выполни ровно одну shell-команду и верни ok=true: afplay /System/Library/Sounds/${sound}`,
+    { label: 'notify:sound', schema: WRITE },
+  );
+  if (beep === null || !beep.ok) {
+    log(`звук ${sound} не сыгран — уведомление не доставлено`);
+  }
+}
 return report;
