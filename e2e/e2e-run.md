@@ -54,6 +54,16 @@ probe:jenkins ok → build #1 FAILURE (SyntaxError app.py:19)
 отсеян (MINOR, не причина). Итог `NOT_FIXABLE` с рекомендацией эскалации в
 DevOps, код не тронут. 4 агента, runId `wf_04e55b7af6c40eaf`.
 
+## Прогон 12 — deploy-autofix на выделенной линейке deploy-* ✅
+
+После рефакторинга (деплой-роли вынесены из workflow в `.qwen/agents/`:
+deploy-status / deploy-trigger / deploy-triage / deploy-fix) — повторный прогон
+без изменения поведения: `NOT_FIXABLE`, `devops-known` (high), DEVOPS-4821,
+Sonar отсеян, в fixHint появился и временный обход (перевести джобу на другой
+агент пула). 4 агента, ~2 минуты, runId `wf_821ea743e3e995e5`. Allowlist
+deploy-trigger пропустил только `trigger_deploy` — разделение с build-trigger
+подтверждено.
+
 ## Прогоны 5–11 — автономный воркер, полный цикл ✅
 
 | Тик | Статус | Что произошло |
