@@ -72,23 +72,19 @@ const TRIAGE = {
   required: ['category', 'rootCause', 'fixable', 'fixHint', 'confidence'],
 };
 
-const FIX = {
+const WRITE = {
   type: 'object',
-  properties: {
-    ok: { type: 'boolean' },
-    commit: { type: 'string' },
-    branch: { type: 'string' },
-    pushed: { type: 'boolean' },
-    summary: { type: 'string' },
-    verification: { type: 'string' },
-    error: { type: 'string' },
-  },
-  required: ['ok', 'pushed', 'summary'],
+  properties: { ok: { type: 'boolean' } },
+  required: ['ok'],
 };
 
 // Headless-запуск передаёт args строкой — нормализуем (урок e2e из mcp-jenkins-test).
 const A = (typeof args === 'string') ? JSON.parse(args) : args;
 const withModel = (o, m) => { if (m) { o.model = m; } return o; };
+const field = (text, k) => {
+  const m = String(text).match(new RegExp('^' + k + ':\\s*(.*)$', 'm'));
+  return m === null ? null : m[1].trim();
+};
 
 const job = A?.job;
 if (!job) {
@@ -124,6 +120,18 @@ if (!probe.ok) {
 
 const attempts = [];
 let lastFix = null;
+
+async function cleanupWorktree(worktreePath) {
+  if (!worktreePath) return;
+  const c = await agent(
+    `Из корня репозитория выполни git worktree remove --force ${worktreePath} ` +
+      '(каталог работы; ветку не удалять — фикс уже запушен). Верни ok=true.',
+    { label: 'worktree:cleanup', schema: WRITE },
+  );
+  if (c === null || !c.ok) {
+    log(`worktree ${worktreePath} не удалён — прибери вручную`);
+  }
+}
 
 for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   phase('Deploy & watch');
@@ -175,6 +183,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   }
   if (status.state === 'SUCCESS') {
     phase('Result');
+    await cleanupWorktree(lastFix === null ? null : lastFix.worktree);
     return {
       status: 'SUCCESS',
       attempt,
@@ -217,13 +226,27 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   }
 
   phase('Fix');
+  // Фикс — в изолированном worktree, текстовый протокол OK/COMMIT/BRANCH/
+  // PUSHED/SUMMARY/WORKTREE (как в build-autofix: isolation проверен e2e).
   const fix = await agent(
     `Деплой ${job} #${trigger.buildNumber} упал. Диагноз: ${triage.category} — ${triage.rootCause}. ` +
       `Подсказка: ${triage.fixHint}. Если правится конфигом/кодом репозитория — исправь по своему ` +
-      'протоколу (воспроизведи → минимальная правка → проверь → commit → push в рабочую ветку).',
-    withModel({ agentType: 'build-fix', label: `fix:${attempt}`, schema: FIX, effort: 'high' }, A?.modelExpert),
+      'протоколу: воспроизведи (красный), минимальная правка, зелёный, commit, push. ' +
+      'Ты запущен в свежем git-worktree: работай в нём (pwd покажет путь для отчёта), рабочая ветка ' +
+      'от базовой, коммит и push оттуда. Заверши отчёт строками ' +
+      'OK / COMMIT / BRANCH / PUSHED / SUMMARY / WORKTREE.',
+    withModel(
+      { agentType: 'build-fix', label: `fix:${attempt}`, isolation: 'worktree', effort: 'high' },
+      A?.modelExpert,
+    ),
   );
-  if (fix === null || !fix.ok || !fix.pushed) {
+  const fixOk = fix !== null && /^true$/i.test(field(fix, 'OK') ?? 'false');
+  const fixCommit = fix === null ? null : field(fix, 'COMMIT');
+  const fixBranch = fix === null ? null : field(fix, 'BRANCH');
+  const fixPushed = fix !== null && /^true$/i.test(field(fix, 'PUSHED') ?? 'false');
+  const fixSummary = fix === null ? '' : (field(fix, 'SUMMARY') ?? '');
+  const fixWorktree = fix === null ? null : (field(fix, 'WORKTREE') ?? null);
+  if (!fixOk || !fixPushed) {
     phase('Result');
     return {
       status: 'FIX_FAILED',
@@ -232,12 +255,13 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       triage,
       fix: fix === null
         ? null
-        : { commit: fix.commit ?? null, summary: fix.summary, error: fix.error ?? null },
+        : { commit: fixCommit, summary: fixSummary, worktree: fixWorktree, excerpt: String(fix).slice(0, 300) },
     };
   }
-  lastFix = { attempt, commit: fix.commit ?? null, branch: fix.branch ?? branch ?? null };
-  log(`Попытка ${attempt}: фикс ${fix.commit ?? '?'} запушен в ${fix.branch ?? branch ?? '?'} — повторный деплой`);
+  lastFix = { attempt, commit: fixCommit, branch: fixBranch ?? branch ?? null, worktree: fixWorktree };
+  log(`Попытка ${attempt}: фикс ${fixCommit ?? '?'} запушен в ${fixBranch ?? branch ?? '?'} — повторный деплой`);
 }
 
 phase('Result');
+await cleanupWorktree(lastFix === null ? null : lastFix.worktree);
 return { status: 'EXHAUSTED', maxAttempts, attempts, lastFix };
