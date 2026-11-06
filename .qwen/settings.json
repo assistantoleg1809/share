@@ -6,5 +6,6 @@
     "sonar": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/mcp/sonar/server.js"] },
     "bitbucket": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/mcp/bitbucket/server.js"] },
     "mmap": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/mcp/mmap/server.js"] }
-  }
+  },
+  "$version": 4
 }
