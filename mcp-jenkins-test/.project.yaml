@@ -1,0 +1,15 @@
+version: 1
+
+name: mcp-jenkins-test
+status: active
+stage: implementing
+
+hypothesis:
+  state: testing
+  statement: "Эталон: MCP-моки (jenkins/sonar/vuln) + Qwen Workflows + скиллы Superpowers закрывают цикл сборка → триаж → правки → пересборка"
+
+release:
+  current: null
+  next: v0.1.0
+
+archive: null
