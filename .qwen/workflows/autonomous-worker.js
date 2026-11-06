@@ -11,6 +11,10 @@ export const meta = {
   ],
 };
 
+// Конвейер (машина состояний, ровно один шаг на тик):
+// IDLE → SPEC → DEV → PR_WAIT (fix-цикл ≤3) → MERGED → вложенный build-autofix → DONE → IDLE.
+// Терминальные фазы (DONE / *_FAILED / PR_DECLINED / PR_STUCK) закрываются следующим тиком.
+
 const STATE_PATH = '.qwen/autonomous-worker/state.json';
 
 const STATE = {
@@ -39,6 +43,7 @@ const STATE = {
     prId: { type: 'string' },
     worktreePath: { type: 'string' },
     fixRetries: { type: 'number' },
+    checkRetries: { type: 'number' },
     lastTick: { type: 'string' },
     lastError: { type: 'string' },
     history: {
@@ -131,6 +136,14 @@ const field = (text, k) => {
   const m = String(text).match(new RegExp('^' + k + ':\\s*(.*)$', 'm'));
   return m === null ? null : m[1].trim();
 };
+// Строки из отчётов агентов/Jira попадают в промпты с shell-командами —
+// интерполируем только после проверки формы (урок ревью: инъекция в
+// git checkout / git commit -m / git worktree remove).
+const SAFE_WORKTREE = /^[\w./-]*\.qwen\/worktrees\/[\w-]+$/;
+const SAFE_BRANCH = /^[\w./=-]+$/;
+const SAFE_KEY = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const safeWorktree = (p) => (p !== null && p !== undefined && SAFE_WORKTREE.test(p) ? p : null);
+const safeBranch = (b) => (b !== null && b !== undefined && SAFE_BRANCH.test(b) ? b : null);
 
 if (!A?.now) {
   throw new Error('args.now обязателен (ISO-строка текущего времени) — драйвер передаёт его при каждом тике');
@@ -162,6 +175,26 @@ if (read === null) {
 let state = read.missing ? { phase: 'IDLE', history: [] } : { ...read };
 delete state.missing;
 
+// Повреждённый state (неизвестная фаза, фаза стадии без задачи, ключ задачи
+// нестандартной формы) не должен ронять тик бесконечно — сбрасываем в IDLE с
+// записью в историю. KNOWN_PHASES держать синхронно с enum схемы STATE.
+const KNOWN_PHASES = new Set([
+  'IDLE', 'SPEC', 'DEV', 'PR_WAIT',
+  'DONE', 'SPEC_FAILED', 'DEV_FAILED', 'BUILD_FAILED', 'PR_DECLINED', 'PR_STUCK',
+]);
+const NEEDS_TASK = { SPEC: true, DEV: true, PR_WAIT: true };
+const stateOk =
+  KNOWN_PHASES.has(state.phase) &&
+  (!NEEDS_TASK[state.phase] || (state.task && SAFE_KEY.test(state.task.key ?? '')));
+if (!stateOk) {
+  log(`state.json повреждён (phase=${String(state.phase)}) — сбрасываю в IDLE`);
+  state = {
+    phase: 'IDLE',
+    history: history(state, 'state-reset'),
+    lastError: `повреждённое состояние: phase=${String(state.phase)}`,
+  };
+}
+
 let report = { status: 'IDLE' };
 let done = false;
 
@@ -190,10 +223,16 @@ if (!done && (state.phase === 'IDLE' || !state.phase)) {
   } else if (scan.tasks.length === 0) {
     report = { status: 'IDLE', message: 'назначенных задач нет' };
   } else {
-    const t = scan.tasks[0];
-    state = { phase: 'SPEC', task: t, history: history(state, 'picked') };
-    log(`Взята задача ${t.key}: ${t.summary}`);
-    report = { status: 'TASK_PICKED', task: t.key, summary: t.summary };
+    const valid = scan.tasks.filter((t) => SAFE_KEY.test(t.key));
+    if (valid.length === 0) {
+      log(`Все ключи задач из Jira не прошли проверку формы: ${scan.tasks.map((t) => t.key).join(', ')}`);
+      report = { status: 'IDLE', message: 'назначенные задачи с некорректными ключами — пропущены' };
+    } else {
+      const t = valid[0];
+      state = { phase: 'SPEC', task: t, history: history(state, 'picked') };
+      log(`Взята задача ${t.key}: ${t.summary}`);
+      report = { status: 'TASK_PICKED', task: t.key, summary: t.summary };
+    }
   }
   done = true;
 }
@@ -259,21 +298,24 @@ if (!done && state.phase === 'DEV') {
     report = { status: 'DEV_FAILED', task: key, error: state.lastError };
   } else {
     const devOk = /^true$/i.test(field(dev, 'OK') ?? 'false');
-    const devBranch = field(dev, 'BRANCH');
-    const devPrId = field(dev, 'PRID');
-    const devWorktree = field(dev, 'WORKTREE');
+    const devBranch = safeBranch(field(dev, 'BRANCH'));
+    const devPrIdRaw = field(dev, 'PRID');
+    const devPrId = devPrIdRaw !== null && /^\d+$/.test(devPrIdRaw) ? devPrIdRaw : null;
+    const devWorktree = safeWorktree(field(dev, 'WORKTREE'));
     if (!devOk || !devBranch || !devPrId) {
       state.phase = 'DEV_FAILED';
       state.lastError =
-        'implementer вернул неполный отчёт (нужны строки OK/BRANCH/PRID): ' + String(dev).slice(0, 300);
+        'implementer вернул неполный/невалидный отчёт (нужны строки OK/BRANCH/PRID допустимой формы): ' +
+        String(dev).slice(0, 300);
       state.history = history(state, 'dev-failed');
       report = { status: 'DEV_FAILED', task: key, error: state.lastError };
     } else {
       state.phase = 'PR_WAIT';
       state.branch = devBranch;
       state.prId = devPrId;
-      state.worktreePath = devWorktree && devWorktree.length > 0 ? devWorktree : null;
+      state.worktreePath = devWorktree;
       state.fixRetries = 0;
+      state.checkRetries = 0;
       state.history = history(state, 'pr-opened');
       log(`PR ${devPrId} открыт из worktree ${state.worktreePath ?? '?'} (ветка ${devBranch})`);
       report = {
@@ -293,9 +335,20 @@ if (!done && state.phase === 'PR_WAIT') {
     `Режим check: pull request ${state.prId} (ветка ${state.branch}). Верни состояние и нерешённые замечания.`,
     withModel({ agentType: 'implementer', label: `pr:check:${state.prId}`, schema: PR, effort: 'low' }, A?.modelFast),
   );
+  if (pr !== null) {
+    state.checkRetries = 0;
+  }
   if (pr === null) {
+    state.checkRetries = (state.checkRetries ?? 0) + 1;
     state.lastError = 'агент check PR не завершился';
-    report = { status: 'ERROR', step: 'pr-check', task: key, error: state.lastError };
+    if (state.checkRetries > 3) {
+      state.phase = 'PR_STUCK';
+      state.lastError = 'pr:check не завершается несколько тиков подряд — нужно вмешательство';
+      state.history = history(state, 'pr-stuck');
+      report = { status: 'PR_STUCK', task: key, error: state.lastError };
+    } else {
+      report = { status: 'ERROR', step: 'pr-check', task: key, error: state.lastError, checkRetries: state.checkRetries };
+    }
   } else if (pr.state === 'MISSING') {
     state.phase = 'DEV_FAILED';
     state.lastError = `PR ${state.prId} не найден`;
@@ -350,6 +403,12 @@ if (!done && state.phase === 'PR_WAIT') {
         state.lastError = 'три попытки устранить замечания не удались — нужно ревью человека';
         state.history = history(state, 'pr-stuck');
         report = { status: 'PR_STUCK', task: key, unresolvedCount: unresolved.length };
+      } else if (safeBranch(state.branch) === null) {
+        state.fixRetries = retries;
+        state.phase = 'PR_STUCK';
+        state.lastError = `ветка «${state.branch}» не прошла проверку формы — ручная проверка`;
+        state.history = history(state, 'pr-stuck');
+        report = { status: 'PR_STUCK', task: key, error: state.lastError };
       } else {
         // Worktree DEV-шага не переживает тик (runtime прибирает его после
         // пуша) — поэтому fix-агент получает СВОЙ свежий worktree и первым
@@ -391,7 +450,7 @@ if (!done) {
   // Терминальные фазы: прибираем worktree воркера, закрываем задачу в историю,
   // следующий тик возьмёт новую из Jira.
   const previousPhase = state.phase ?? 'UNKNOWN';
-  if (state.worktreePath) {
+  if (state.worktreePath && safeWorktree(state.worktreePath) !== null) {
     const clean = await agent(
       `Прибери за воркером: сначала git worktree list — если worktree ${state.worktreePath} ` +
         'отсутствует, верни ok=true сразу; иначе выполни из корня репозитория ' +
@@ -401,6 +460,8 @@ if (!done) {
     if (clean === null || !clean.ok) {
       log(`worktree ${state.worktreePath} не удалён — прибери вручную`);
     }
+  } else if (state.worktreePath) {
+    log(`worktree ${state.worktreePath} не прошёл проверку формы — прибери вручную`);
   }
   state = { phase: 'IDLE', history: history(state, `closed:${previousPhase}`) };
   log(`Задача ${key || '?'} закрыта в фазе ${previousPhase} — воркер переходит к скану`);
@@ -408,6 +469,10 @@ if (!done) {
 }
 
 state.lastTick = now;
+// Успешный тик не тащит старую ошибку в state (урок ревью f3).
+if (!/FAILED|ERROR|STUCK|MCP_UNAVAILABLE/.test(report.status)) {
+  state.lastError = null;
+}
 phase('Result');
 await saveState(state);
 

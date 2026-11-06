@@ -13,6 +13,9 @@ export const meta = {
   ],
 };
 
+// Структурный близнец build-autofix.js (песочница запрещает import — дублирование
+// осознанное). Правки схем/хелперов/цикла вносить синхронно в оба файла.
+
 const AVAIL = {
   type: 'object',
   properties: {
@@ -31,7 +34,7 @@ const TRIGGER = {
     url: { type: 'string' },
     error: { type: 'string' },
   },
-  required: ['ok'],
+  required: ['ok', 'deployNumber'],
 };
 
 const STATUS = {
@@ -85,6 +88,11 @@ const field = (text, k) => {
   const m = String(text).match(new RegExp('^' + k + ':\\s*(.*)$', 'm'));
   return m === null ? null : m[1].trim();
 };
+// Строки из текстовых отчётов агентов попадают в промпты с shell-командами —
+// перед интерполяцией проверяем форму (метасимволы и чужие пути не проходят;
+// семантику дополнительно страхует сам git: remove отказывает на чужих путях).
+const SAFE_WORKTREE = /^[\w./-]*\.qwen\/worktrees\/[\w-]+$/;
+const safeWorktree = (p) => (p !== null && p !== undefined && SAFE_WORKTREE.test(p) ? p : null);
 
 const job = A?.job;
 if (!job) {
@@ -123,6 +131,10 @@ let lastFix = null;
 
 async function cleanupWorktree(worktreePath) {
   if (!worktreePath) return;
+  if (safeWorktree(worktreePath) === null) {
+    log(`worktree ${worktreePath} не прошёл проверку формы пути — прибери вручную`);
+    return;
+  }
   const c = await agent(
     `Из корня репозитория выполни git worktree remove --force ${worktreePath} ` +
       '(каталог работы; ветку не удалять — фикс уже запушен). Верни ok=true.',
@@ -257,7 +269,12 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         : { commit: fixCommit, summary: fixSummary, worktree: fixWorktree, excerpt: String(fix).slice(0, 300) },
     };
   }
-  lastFix = { attempt, commit: fixCommit, branch: fixBranch ?? branch ?? null, worktree: fixWorktree };
+  lastFix = {
+    attempt,
+    commit: fixCommit,
+    branch: fixBranch ?? branch ?? null,
+    worktree: safeWorktree(fixWorktree),
+  };
   log(`Попытка ${attempt}: фикс ${fixCommit ?? '?'} запушен в ${fixBranch ?? branch ?? '?'} — повторный деплой`);
 }
 

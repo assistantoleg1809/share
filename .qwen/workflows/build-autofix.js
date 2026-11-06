@@ -13,6 +13,9 @@ export const meta = {
   ],
 };
 
+// Структурный близнец deploy-autofix.js (песочница запрещает import — дублирование
+// осознанное). Правки схем/хелперов/цикла вносить синхронно в оба файла.
+
 const AVAIL = {
   type: 'object',
   properties: {
@@ -31,7 +34,7 @@ const TRIGGER = {
     url: { type: 'string' },
     error: { type: 'string' },
   },
-  required: ['ok'],
+  required: ['ok', 'buildNumber'],
 };
 
 const STATUS = {
@@ -85,6 +88,11 @@ const field = (text, k) => {
   const m = String(text).match(new RegExp('^' + k + ':\\s*(.*)$', 'm'));
   return m === null ? null : m[1].trim();
 };
+// Строки из текстовых отчётов агентов попадают в промпты с shell-командами —
+// перед интерполяцией проверяем форму (метасимволы и чужие пути не проходят;
+// семантику дополнительно страхует сам git: remove отказывает на чужих путях).
+const SAFE_WORKTREE = /^[\w./-]*\.qwen\/worktrees\/[\w-]+$/;
+const safeWorktree = (p) => (p !== null && p !== undefined && SAFE_WORKTREE.test(p) ? p : null);
 
 const job = A?.job;
 if (!job) {
@@ -123,6 +131,10 @@ let lastFix = null;
 
 async function cleanupWorktree(worktreePath) {
   if (!worktreePath) return;
+  if (safeWorktree(worktreePath) === null) {
+    log(`worktree ${worktreePath} не прошёл проверку формы пути — прибери вручную`);
+    return;
+  }
   const c = await agent(
     `Из корня репозитория выполни git worktree remove --force ${worktreePath} ` +
       '(каталог работы; ветку не удалять — фикс уже запушен). Верни ok=true.',
@@ -147,12 +159,13 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       error: trigger === null ? 'агент запуска не завершился' : (trigger.error ?? 'неизвестная ошибка запуска'),
     };
   }
-  log(`Попытка ${attempt}: сборка #${trigger.buildNumber} запущена`);
+  const buildNumber = trigger.buildNumber ?? null;
+  log(`Попытка ${attempt}: сборка #${buildNumber} запущена`);
 
   let status = null;
   for (let watcher = 1; watcher <= MAX_WATCHERS; watcher++) {
     const chunk = await agent(
-      `Сборка ${job} #${trigger.buildNumber}: наблюдай по своему протоколу ` +
+      `Сборка ${job} #${buildNumber}: наблюдай по своему протоколу ` +
         '(проверка статуса, между проверками sleep 45, бюджет этого захода ~8 минут). ' +
         'Сборка всё ещё идёт — верни state=RUNNING.',
       withModel({ agentType: 'build-status', label: `watch:${attempt}:${watcher}`, schema: STATUS, effort: 'low' }, A?.modelFast),
@@ -170,7 +183,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       status: 'WATCH_TIMEOUT',
       attempt,
       attempts,
-      buildNumber: trigger.buildNumber ?? null,
+      buildNumber,
       message: `Сборка не завершилась за ${MAX_WATCHERS} наблюдателей (~64 мин) — проверь её вручную`,
     };
   }
@@ -180,25 +193,25 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     return {
       status: 'SUCCESS',
       attempt,
-      buildNumber: trigger.buildNumber ?? null,
+      buildNumber,
       url: status.url ?? trigger.url ?? null,
     };
   }
 
   phase('Triage');
   const triage = await agent(
-    `Сборка ${job} #${trigger.buildNumber} упала (${status.state}).\n` +
+    `Сборка ${job} #${buildNumber} упала (${status.state}).\n` +
       `Первая ошибка: ${status.errorSnippet ?? 'не извлечена'}\n` +
       `Хвост лога:\n${(status.logTail ?? '').slice(0, 4000)}\n` +
       'Разбери причину по своему протоколу (лог Jenkins, Jira DevOps, Confluence, Sonar, Bitbucket) и верни диагноз.',
     withModel({ agentType: 'build-triage', label: `triage:${attempt}`, schema: TRIAGE, effort: 'high' }, A?.modelExpert),
   );
   if (triage === null) {
-    return { status: 'TRIAGE_FAILED', attempt, attempts, buildNumber: trigger.buildNumber ?? null };
+    return { status: 'TRIAGE_FAILED', attempt, attempts, buildNumber };
   }
   attempts.push({
     attempt,
-    buildNumber: trigger.buildNumber ?? null,
+    buildNumber,
     result: status.state,
     category: triage.category,
     rootCause: triage.rootCause,
@@ -213,7 +226,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   // текстовый (OK/COMMIT/BRANCH/PUSHED/SUMMARY/WORKTREE) — как у DEV-шага
   // воркера: isolation-агенты проверены e2e в текстовом протоколе.
   const fix = await agent(
-    `Сборка ${job} #${trigger.buildNumber} упала. Диагноз: ${triage.category} — ${triage.rootCause}. ` +
+    `Сборка ${job} #${buildNumber} упала. Диагноз: ${triage.category} — ${triage.rootCause}. ` +
       `Подсказка: ${triage.fixHint}. Исправь по своему протоколу: воспроизведи (красный), минимальная правка, ` +
       'зелёный, commit, push. Ты запущен в свежем git-worktree: работай в нём (pwd покажет путь для отчёта), ' +
       'рабочая ветка от базовой, коммит и push оттуда. Заверши отчёт строками ' +
@@ -250,7 +263,12 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   }
   // Фикс делается и на последней попытке: даже без пересборки человек получает
   // ветку с исправлением, а не только список диагнозов.
-  lastFix = { attempt, commit: fixCommit, branch: fixBranch ?? branch ?? null, worktree: fixWorktree };
+  lastFix = {
+    attempt,
+    commit: fixCommit,
+    branch: fixBranch ?? branch ?? null,
+    worktree: safeWorktree(fixWorktree),
+  };
   log(`Попытка ${attempt}: фикс ${fixCommit ?? '?'} запушен в ${fixBranch ?? branch ?? '?'} — пересборка`);
 }
 
