@@ -351,21 +351,25 @@ if (!done && state.phase === 'PR_WAIT') {
         state.history = history(state, 'pr-stuck');
         report = { status: 'PR_STUCK', task: key, unresolvedCount: unresolved.length };
       } else {
-        const fixOpts = {
-          agentType: 'implementer',
-          label: `pr:fix:${state.prId}:${retries}`,
-          schema: FIXR,
-          effort: 'high',
-        };
-        if (state.worktreePath) {
-          fixOpts.workingDir = state.worktreePath;
-        }
+        // Worktree DEV-шага не переживает тик (runtime прибирает его после
+        // пуша) — поэтому fix-агент получает СВОЙ свежий worktree и первым
+        // делом переключается на ветку задачи (урок e2e: workingDir по
+        // протухшему пути роняет диспетчеризацию).
         const fix = await agent(
           `Режим fix: pull request ${state.prId}. Замечания:\n${JSON.stringify(unresolved, null, 2)}\n` +
             `Устрани каждое: ответь (add_comment), правка, коммит, пуш в ${state.branch}, замечание закрой ` +
-            'через resolve_comment.' +
-            (state.worktreePath ? ` Работай в worktree ${state.worktreePath}.` : ''),
-          withModel(fixOpts, A?.modelExpert),
+            'через resolve_comment. Ты запущен в свежем git-worktree от main: сначала выполни ' +
+            `git checkout ${state.branch} (ветка задачи уже в репозитории, коммиты PR в ней) и работай в ней.`,
+          withModel(
+            {
+              agentType: 'implementer',
+              label: `pr:fix:${state.prId}:${retries}`,
+              schema: FIXR,
+              effort: 'high',
+              isolation: 'worktree',
+            },
+            A?.modelExpert,
+          ),
         );
         if (fix !== null && fix.ok && fix.pushed) {
           state.fixRetries = 0;
@@ -389,8 +393,9 @@ if (!done) {
   const previousPhase = state.phase ?? 'UNKNOWN';
   if (state.worktreePath) {
     const clean = await agent(
-      `Прибери за воркером: из корня репозитория выполни ` +
-        `git worktree remove --force ${state.worktreePath} (каталог работы; ветку не удалять). Верни ok=true.`,
+      `Прибери за воркером: сначала git worktree list — если worktree ${state.worktreePath} ` +
+        'отсутствует, верни ok=true сразу; иначе выполни из корня репозитория ' +
+        `git worktree remove --force ${state.worktreePath} (ветку не удалять). Верни ok=true.`,
       { label: 'worktree:cleanup', schema: WRITE },
     );
     if (clean === null || !clean.ok) {
