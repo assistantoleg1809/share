@@ -36,7 +36,7 @@ const STATE = {
     },
     specDir: { type: 'string' },
     branch: { type: 'string' },
-    prId: { type: ['string', 'number'] },
+    prId: { type: 'string' },
     worktreePath: { type: 'string' },
     fixRetries: { type: 'number' },
     lastTick: { type: 'string' },

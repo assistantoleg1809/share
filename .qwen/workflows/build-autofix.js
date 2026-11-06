@@ -27,7 +27,7 @@ const TRIGGER = {
   type: 'object',
   properties: {
     ok: { type: 'boolean' },
-    buildNumber: { type: ['string', 'number'] },
+    buildNumber: { type: 'number' },
     url: { type: 'string' },
     error: { type: 'string' },
   },
@@ -41,7 +41,7 @@ const STATUS = {
       type: 'string',
       enum: ['RUNNING', 'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'UNKNOWN'],
     },
-    buildNumber: { type: ['string', 'number'] },
+    buildNumber: { type: 'number' },
     url: { type: 'string' },
     errorSnippet: { type: 'string' },
     logTail: { type: 'string' },
@@ -237,6 +237,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       attempt,
       attempts,
       triage,
+      lastFix,
       fix: fix === null
         ? null
         : {
