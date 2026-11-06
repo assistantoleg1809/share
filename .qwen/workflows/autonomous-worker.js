@@ -217,6 +217,18 @@ if (!done && state.phase === 'SPEC') {
       state.task = { ...state.task, jenkinsJob: spec.jenkinsJob };
     }
     state.history = history(state, 'spec-done');
+    // Спека пишется в основной чекаут — коммитим её сразу: DEV-шаг требует
+    // чистое дерево для isolation:'worktree' (урок e2e: openspec/ в untracked
+    // ронял DEV-агента до старта).
+    const commitSpec = await agent(
+      'Закоммить в git только новые/изменённые файлы каталога openspec/ ' +
+        `(git add openspec && git commit -m "docs(openspec): ${key} — спека" — именно в таком объёме, ` +
+        'остальное не трогать). Нечего коммитить — тоже верни ok=true.',
+      { label: 'spec:commit', schema: WRITE },
+    );
+    if (commitSpec === null || !commitSpec.ok) {
+      log('openspec-каталог не закоммичен — DEV-шаг откажется до ручного коммита');
+    }
     report = {
       status: 'SPEC_DONE',
       task: key,

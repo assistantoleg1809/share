@@ -28,9 +28,9 @@ const initialComments = () => [
 
 const TOOLS = [
   { name: 'create_pr', description: 'Создать pull request из ветки', inputSchema: { type: 'object', properties: { branch: { type: 'string' }, title: { type: 'string' }, description: { type: 'string' } }, required: ['branch', 'title'] } },
-  { name: 'get_pr', description: 'Состояние PR: state, замечания', inputSchema: { type: 'object', properties: { prId: { type: ['string', 'number'] } }, required: ['prId'] } },
-  { name: 'add_comment', description: 'Ответ на замечание в PR', inputSchema: { type: 'object', properties: { prId: { type: ['string', 'number'] }, text: { type: 'string' } }, required: ['prId', 'text'] } },
-  { name: 'resolve_comment', description: 'Закрыть замечание ревьюера', inputSchema: { type: 'object', properties: { prId: { type: ['string', 'number'] }, commentId: { type: 'number' } }, required: ['prId', 'commentId'] } },
+  { name: 'get_pr', description: 'Состояние PR: state, замечания (prId — число)', inputSchema: { type: 'object', properties: { prId: { type: 'number' } }, required: ['prId'] } },
+  { name: 'add_comment', description: 'Ответ на замечание в PR (prId — число)', inputSchema: { type: 'object', properties: { prId: { type: 'number' }, text: { type: 'string' } }, required: ['prId', 'text'] } },
+  { name: 'resolve_comment', description: 'Закрыть замечание ревьюера (prId — число)', inputSchema: { type: 'object', properties: { prId: { type: 'number' }, commentId: { type: 'number' } }, required: ['prId', 'commentId'] } },
 ];
 
 const prState = (s, id) => {
