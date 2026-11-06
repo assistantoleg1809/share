@@ -1,6 +1,6 @@
 # Эталон: агенты и workflows Qwen Code для сборки и автономной работы
 
-Комплект из 7 агентов, 3 workflows и испытательного стенда (моки 6 MCP +
+Комплект из 11 агентов, 3 workflows и испытательного стенда (моки 6 MCP +
 e2e-таргет с инжектированным багом), собранный по рабочему процессу
 «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление».
 Копируется в целевой проект целиком (`.qwen/agents/`, `.qwen/workflows/`) и
@@ -17,10 +17,14 @@ e2e-таргет с инжектированным багом), собранны
   agents/
     reviewer.md         ревью кода, без MCP
     openspec.md         Jira+Confluence+mmap → OpenSpec-документация
-    build-status.md     только Jenkins: статус/лог/ожидание
-    build-trigger.md    только Jenkins: запуск сборки/деплоя, одна попытка
+    build-status.md     только Jenkins: статус/лог/ожидание сборки
+    build-trigger.md    только Jenkins: запуск сборки, одна попытка
     build-triage.md     5 MCP: разбор причин падения сборки
     build-fix.md        5 MCP + правки кода, TDD, commit, push
+    deploy-status.md    только Jenkins: статус/лог/ожидание деплоя
+    deploy-trigger.md   только Jenkins: запуск деплоя, одна попытка
+    deploy-triage.md    5 MCP: разбор падения деплоя (приоритет DevOps/инфра)
+    deploy-fix.md       5 MCP + правки конфига/кода, TDD, commit, push
     implementer.md      Jira+Bitbucket + код: реализация, PR, замечания
   workflows/
     build-autofix.js        /build-autofix — сборка с исправлением (3 попытки)
@@ -43,18 +47,24 @@ e2e/
 | reviewer | — | — | — | — | — | — | только чтение (read/grep/glob, plan-режим) |
 | openspec | — | ✓ | ✓ | — | — | ✓ | чтение/запись (openspec-каталог, CLI) |
 | build-status | ✓ | — | — | — | — | — | чтение + `sleep` в shell |
-| build-trigger | только инструменты запуска (build/deploy) | — | — | — | — | — | — |
+| build-trigger | только trigger_build | — | — | — | — | — | — |
 | build-triage | ✓ | ✓ | ✓ | ✓ | ✓ | — | только чтение (без shell) |
 | build-fix | ✓ | ✓ | ✓ | ✓ | ✓ | — | полный: правки, shell, git, push |
+| deploy-status | ✓ | — | — | — | — | — | чтение + `sleep` в shell |
+| deploy-trigger | только trigger_deploy | — | — | — | — | — | — |
+| deploy-triage | ✓ | ✓ | ✓ | ✓ | ✓ | — | только чтение (без shell) |
+| deploy-fix | ✓ | ✓ | ✓ | ✓ | ✓ | — | полный: правки, shell, git, push |
 | implementer | — | ✓ | — | — | ✓ | — | полный: правки, shell, git, push |
 
 Механика ограничений:
 
 - **Deny-list** (`disallowedTools: mcp__<server>`) у openspec, build-status,
-  build-triage, build-fix, implementer — запрещает перечисленные серверы
-  целиком. Серверов в списке нет — агент их наследует от сессии.
-- **Allowlist** (`tools:`) у reviewer и build-trigger — только перечисленные
-  инструменты; MCP в списке не назван — агент его не получит вовсе.
+  build-triage, build-fix, deploy-status, deploy-triage, deploy-fix,
+  implementer — запрещает перечисленные серверы целиком. Серверов в списке
+  нет — агент их наследует от сессии.
+- **Allowlist** (`tools:`) у reviewer, build-trigger и deploy-trigger — только
+  перечисленные инструменты; MCP в списке не назван — агент его не получит
+  вовсе.
 - Появится новый MCP-сервер в settings.json — внеси его в deny-list агентов,
   которым он не нужен (deny-list защищает только от перечисленного).
 
@@ -111,11 +121,13 @@ worktree (ветка с фиксом остаётся). Протокол фик�
 ## 4a. `/deploy-autofix` — вторая ступень для EFS-проектов
 
 Аргументы: `{ job, branch?, maxAttempts? = 2, modelFast?, modelExpert? }`.
-Тот же цикл, но для deploy-джобы (`trigger_deploy`), и триаж с приоритетом
-деплой-специфики: открытые тикеты DevOps по тексту ошибки (`devops-known`),
-инфра (`infra`) — обе категории `NOT_FIXABLE` с тикетами для передачи DevOps;
-`config`/`code` — фикс тем же build-fix-агентом в worktree. Для EFS-проектов
-это закрывает боль «лог деплой-жабы → известные проблемы DevOps» из
+Тот же цикл, что у сборки, но из собственной линейки агентов: **deploy-trigger**
+(только `trigger_deploy`) → **deploy-status** (ожидание) → **deploy-triage**
+(приоритет деплой-специфики: открытые тикеты DevOps по тексту ошибки →
+`devops-known`, инфраструктура → `infra`; обе категории `NOT_FIXABLE` с
+тикетами для передачи DevOps) → **deploy-fix** в worktree, если причина
+правится конфигом/кодом (`config`/`code`). Для EFS-проектов это закрывает
+боль «лог деплой-жабы → известные проблемы DevOps» из
 [about-my-work.md](../about-my-work.md).
 
 ## 5. `/autonomous-worker` — автономный воркер
@@ -251,10 +263,11 @@ rm -rf e2e/bare.git e2e/e2e-run && git init --bare -q e2e/bare.git && git push -
    `bitbucket`, `mmap`. Сверь со своими id в settings.json → mcpServers и
    поправь deny-listы/allowlistы во всех agent-файлах. `mmap` — отдельный
    сервер схем/знаний; точное имя уточни у владельца конфигурации.
-2. **Инструменты запуска Jenkins.** В `.qwen/agents/build-trigger.md` allowlist
-   содержит `mcp__jenkins__trigger_build` и `mcp__jenkins__trigger_deploy` —
-   замени на точные имена из `/mcp`. Allowlist строгий: пока имя не совпадает,
-   агент честно вернёт ошибку шага 0.
+2. **Инструменты запуска Jenkins.** Allowlist-агенты строгие: в
+   `.qwen/agents/build-trigger.md` — `mcp__jenkins__trigger_build`, в
+   `.qwen/agents/deploy-trigger.md` — `mcp__jenkins__trigger_deploy`; замени
+   на точные имена из `/mcp`. Пока имя не совпадает, агент честно вернёт
+   ошибку шага 0.
 3. **Сборочная джоба.** Передай `job` в `/build-autofix` или укажи `jenkinsJob`
    в задаче Jira/реестре проектов, откуда его возьмёт скан.
 4. **OpenSpec.** Убедись, что скиллы openspec-* установлены и CLI доступен.
@@ -279,8 +292,9 @@ rm -rf e2e/bare.git e2e/e2e-run && git init --bare -q e2e/bare.git && git push -
 
 В репозитории два эталона, они дополняют друг друга:
 
-- **Этот комплект** — архитектура ролей: 7 агентов с MCP-матрицей, 3 workflow,
-  звук, worktree-изоляция, протокол «Шаг 0».
+- **Этот комплект** — архитектура ролей: 11 агентов (линейки build-* и
+  deploy-* + общие) с MCP-матрицей, 3 workflow, звук, worktree-изоляция,
+  протокол «Шаг 0».
 - **[mcp-jenkins-test](../mcp-jenkins-test/README.md)** — самостоятельный
   мини-эталон TDD-цикла (`/build-failure-triage`, `/build-fix-loop`) со своими
   моками и e2e; его прогоны дали уроки, зашитые сюда (args-строка, имена

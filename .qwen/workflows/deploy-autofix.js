@@ -1,14 +1,14 @@
 export const meta = {
   name: 'Deploy with autofix',
   description:
-    'Запуск deploy-джобы Jenkins с разбором ошибок деплоя: до 2 попыток «запуск → ожидание → триаж (приоритет: инфра/DevOps-тикет) → фикс, если правится кодом»',
+    'Запуск deploy-джобы Jenkins с разбором ошибок деплоя: до 2 попыток «запуск → ожидание → триаж (приоритет: инфра/DevOps-тикет) → фикс, если правится конфигом/кодом»',
   whenToUse:
     'Успешная сборка слита, нужно прогнать deploy-джобу; при падении — понять: инфра/известная проблема DevOps или правится кодом',
   phases: [
     { title: 'MCP check', detail: 'Доступность Jenkins до траты попыток' },
     { title: 'Deploy & watch', detail: 'Запуск deploy-джобы и ожидание статуса' },
     { title: 'Triage', detail: 'Разбор падения: инфра, DevOps-тикет, конфиг или код' },
-    { title: 'Fix', detail: 'Только если причина правится кодом/конфигом репозитория' },
+    { title: 'Fix', detail: 'Только если причина правится конфигом/кодом репозитория' },
     { title: 'Result', detail: 'Итоговый отчёт' },
   ],
 };
@@ -27,7 +27,7 @@ const TRIGGER = {
   type: 'object',
   properties: {
     ok: { type: 'boolean' },
-    buildNumber: { type: 'number' },
+    deployNumber: { type: 'number' },
     url: { type: 'string' },
     error: { type: 'string' },
   },
@@ -41,7 +41,7 @@ const STATUS = {
       type: 'string',
       enum: ['RUNNING', 'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'UNKNOWN'],
     },
-    buildNumber: { type: 'number' },
+    deployNumber: { type: 'number' },
     url: { type: 'string' },
     errorSnippet: { type: 'string' },
     logTail: { type: 'string' },
@@ -100,7 +100,7 @@ phase('MCP check');
 const probe = await agent(
   'Проверь доступность MCP-сервера jenkins по своему шагу 0 (один лёгкий вызов). ' +
     'Сервер отвечает — ok=true. Нет — ok=false, problem и рекомендации.',
-  withModel({ agentType: 'build-status', label: 'probe:jenkins', schema: AVAIL, effort: 'low' }, A?.modelFast),
+  withModel({ agentType: 'deploy-status', label: 'probe:jenkins', schema: AVAIL, effort: 'low' }, A?.modelFast),
 );
 if (probe === null) {
   return {
@@ -136,10 +136,9 @@ async function cleanupWorktree(worktreePath) {
 for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   phase('Deploy & watch');
   const trigger = await agent(
-    `Запусти deploy-джобу ${job} инструментом запуска деплоя (trigger_deploy). ${branchLine} ` +
-      'Одна попытка, без ретраев. Верни номер запуска и url.',
+    `Запусти deploy-джобу ${job}. ${branchLine} Одна попытка, без ретраев. Верни номер запуска и url.`,
     withModel(
-      { agentType: 'build-trigger', label: `deploy:${attempt}`, schema: TRIGGER, effort: 'low' },
+      { agentType: 'deploy-trigger', label: `deploy:${attempt}`, schema: TRIGGER, effort: 'low' },
       A?.modelFast,
     ),
   );
@@ -151,16 +150,17 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       error: trigger === null ? 'агент запуска не завершился' : (trigger.error ?? 'неизвестная ошибка запуска'),
     };
   }
-  log(`Попытка ${attempt}: деплой #${trigger.buildNumber} запущен`);
+  const deployNumber = trigger.deployNumber ?? null;
+  log(`Попытка ${attempt}: деплой #${deployNumber} запущен`);
 
   let status = null;
   for (let watcher = 1; watcher <= MAX_WATCHERS; watcher++) {
     const chunk = await agent(
-      `Деплой ${job} #${trigger.buildNumber}: наблюдай по своему протоколу ` +
-        '(статус деплоя, между проверками sleep 45, бюджет этого захода ~8 минут). ' +
+      `Деплой ${job} #${deployNumber}: наблюдай по своему протоколу ` +
+        '(проверка статуса, между проверками sleep 45, бюджет этого захода ~8 минут). ' +
         'Деплой всё ещё идёт — верни state=RUNNING.',
       withModel(
-        { agentType: 'build-status', label: `watch:${attempt}:${watcher}`, schema: STATUS, effort: 'low' },
+        { agentType: 'deploy-status', label: `watch:${attempt}:${watcher}`, schema: STATUS, effort: 'low' },
         A?.modelFast,
       ),
     );
@@ -177,7 +177,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       status: 'WATCH_TIMEOUT',
       attempt,
       attempts,
-      buildNumber: trigger.buildNumber ?? null,
+      deployNumber,
       message: `Деплой не завершился за ${MAX_WATCHERS} наблюдателей (~64 мин) — проверь вручную`,
     };
   }
@@ -187,28 +187,26 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     return {
       status: 'SUCCESS',
       attempt,
-      buildNumber: trigger.buildNumber ?? null,
+      deployNumber,
       url: status.url ?? trigger.url ?? null,
     };
   }
 
   phase('Triage');
   const triage = await agent(
-    `Деплой ${job} #${trigger.buildNumber} упал (${status.state}).\n` +
+    `Деплой ${job} #${deployNumber} упал (${status.state}).\n` +
       `Первая ошибка: ${status.errorSnippet ?? 'не извлечена'}\n` +
       `Хвост лога:\n${(status.logTail ?? '').slice(0, 4000)}\n` +
-      'Разбери по своему протоколу, но приоритет деплой-специфики: (1) поиск открытых тикетов DevOps ' +
-      'по тексту ошибки (известная/массовая проблема — категория devops-known, fixable=false); ' +
-      '(2) инфраструктура/окружение — infra, fixable=false; (3) конфиг или код репозитория — ' +
-      'config/code, fixable=true с fixHint; Confluence — runbook по деплою.',
-    withModel({ agentType: 'build-triage', label: `triage:${attempt}`, schema: TRIAGE, effort: 'high' }, A?.modelExpert),
+      'Разбери причину по своему протоколу (приоритет: известные тикеты DevOps и инфра, ' +
+      'затем конфиг/код репозитория) и верни диагноз.',
+    withModel({ agentType: 'deploy-triage', label: `triage:${attempt}`, schema: TRIAGE, effort: 'high' }, A?.modelExpert),
   );
   if (triage === null) {
-    return { status: 'TRIAGE_FAILED', attempt, attempts, buildNumber: trigger.buildNumber ?? null };
+    return { status: 'TRIAGE_FAILED', attempt, attempts, deployNumber };
   }
   attempts.push({
     attempt,
-    buildNumber: trigger.buildNumber ?? null,
+    deployNumber,
     result: status.state,
     category: triage.category,
     rootCause: triage.rootCause,
@@ -229,14 +227,13 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   // Фикс — в изолированном worktree, текстовый протокол OK/COMMIT/BRANCH/
   // PUSHED/SUMMARY/WORKTREE (как в build-autofix: isolation проверен e2e).
   const fix = await agent(
-    `Деплой ${job} #${trigger.buildNumber} упал. Диагноз: ${triage.category} — ${triage.rootCause}. ` +
-      `Подсказка: ${triage.fixHint}. Если правится конфигом/кодом репозитория — исправь по своему ` +
-      'протоколу: воспроизведи (красный), минимальная правка, зелёный, commit, push. ' +
-      'Ты запущен в свежем git-worktree: работай в нём (pwd покажет путь для отчёта), рабочая ветка ' +
-      'от базовой, коммит и push оттуда. Заверши отчёт строками ' +
+    `Деплой ${job} #${deployNumber} упал. Диагноз: ${triage.category} — ${triage.rootCause}. ` +
+      `Подсказка: ${triage.fixHint}. Исправь по своему протоколу: воспроизведи (красный), минимальная правка, ` +
+      'зелёный, commit, push. Ты запущен в свежем git-worktree: работай в нём (pwd покажет путь для отчёта), ' +
+      'рабочая ветка от базовой, коммит и push оттуда. Заверши отчёт строками ' +
       'OK / COMMIT / BRANCH / PUSHED / SUMMARY / WORKTREE.',
     withModel(
-      { agentType: 'build-fix', label: `fix:${attempt}`, isolation: 'worktree', effort: 'high' },
+      { agentType: 'deploy-fix', label: `fix:${attempt}`, isolation: 'worktree', effort: 'high' },
       A?.modelExpert,
     ),
   );
@@ -248,6 +245,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   const fixWorktree = fix === null ? null : (field(fix, 'WORKTREE') ?? null);
   if (!fixOk || !fixPushed) {
     phase('Result');
+    // worktree не прибираем: человеку нужен каталог с незавершённым фиксом
     return {
       status: 'FIX_FAILED',
       attempt,
