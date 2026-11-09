@@ -99,6 +99,20 @@ const JOURNAL = {
   },
 };
 
+// Реестр проектов (Задача «конфиг проектов»): job/ветка/политики могут жить
+// в файле, а не в args — расширение читает конфиг первым делом. Читаем
+// свободным объектом: записи короткие, строковые поля эхируются надёжно.
+const REGISTRY = {
+  type: 'object',
+  properties: {
+    missing: { type: 'boolean' },
+    path: { type: 'string' },
+    defaultProject: { type: 'string' },
+    projects: { type: 'object' },
+    checkedPaths: { type: 'array', items: { type: 'string' } },
+  },
+};
+
 // Headless-запуск передаёт args строкой — нормализуем (урок e2e из mcp-jenkins-test).
 const A = (typeof args === 'string') ? JSON.parse(args) : args;
 const withModel = (o, m) => { if (m) { o.model = m; } return o; };
@@ -122,11 +136,8 @@ const slugTag = (t) => {
 };
 const NOW = (typeof A?.now === 'string' && A.now) || null;
 
-const job = A?.job;
-if (!job) {
-  throw new Error('args.job обязателен, например { job: "app-build", branch: "task/PRJ-1" }');
-}
-const branch = A?.branch;
+const jobArg = typeof A?.job === 'string' ? A.job.trim() : '';
+const branchArg = A?.branch;
 const maxAttempts = A?.maxAttempts ?? 3;
 const MAX_WATCHERS = 8;
 
@@ -145,8 +156,6 @@ if (journalPath === null) {
     ? `openspec/changes/${tag}/run-build.json`
     : '.qwen/ship-kit/runs/run-build.json';
 }
-
-const branchLine = branch ? `Ветка: ${branch}.` : 'Ветка: дефолт джобы.';
 
 phase('MCP check');
 const probe = await agent(
@@ -170,6 +179,56 @@ if (!probe.ok) {
   };
 }
 
+// Реестр проектов читается первым делом (решение владельца 2026-11-09):
+// job/ветка/политики ошибок могут прийти из конфига, а не из args. Цепочка
+// путей — первый существующий файл рабочий; реестра нет — работаем от args.
+const regPaths = [];
+if (typeof A?.registry === 'string' && /^[\w.~/-]+\.json$/.test(A.registry)) {
+  regPaths.push(A.registry);
+} else if (typeof A?.registry === 'string') {
+  log(`args.registry «${A.registry}» не прошёл проверку формы — ищу реестр по стандартной цепочке`);
+}
+regPaths.push('ship-kit.projects.json (корень репозитория)');
+regPaths.push('.qwen/ship-kit/projects.json (корень репозитория)');
+regPaths.push('~/.qwen/ship-kit/projects.json (домашний каталог пользователя)');
+const reg = await agent(
+  'Проверь по очереди файлы реестра проектов ship-kit (JSON с полями defaultProject и projects):\n' +
+    regPaths.map((p, i) => `${i + 1}. ${p}`).join('\n') +
+    '\nПервый существующий файл верни как: path (где нашёл), defaultProject и projects ' +
+    '(из файла дословно), checkedPaths (все проверенные пути). ' +
+    'Ни один не существует — {missing:true, checkedPaths:[...]}. Другого не возвращай.',
+  withModel({ label: 'registry:read', schema: REGISTRY, effort: 'low' }, A?.modelFast),
+);
+const regProjects = reg !== null && reg.projects !== null && typeof reg.projects === 'object' ? reg.projects : {};
+const projectArg = typeof A?.project === 'string' && A.project.trim() ? A.project.trim() : null;
+const projectDefault =
+  typeof reg?.defaultProject === 'string' && reg.defaultProject.trim() ? reg.defaultProject.trim() : null;
+const projectName = projectArg ?? projectDefault;
+const entryRaw = projectName !== null && regProjects[projectName] !== null && typeof regProjects[projectName] === 'object'
+  ? regProjects[projectName]
+  : null;
+if (projectArg !== null && entryRaw === null) {
+  throw new Error(
+    `args.project «${projectArg}» не найден в реестре${reg?.missing === true ? ' (реестр не найден)' : ''}. ` +
+      `Доступны проекты: ${Object.keys(regProjects).join(', ') || '—'}`,
+  );
+}
+const regJob = typeof entryRaw?.jenkinsJob === 'string' ? entryRaw.jenkinsJob.trim() : '';
+const regBranch = typeof entryRaw?.branchDefault === 'string' ? entryRaw.branchDefault.trim() : '';
+const notFixable = Array.isArray(entryRaw?.errorPolicy?.notFixableCategories)
+  ? entryRaw.errorPolicy.notFixableCategories.filter((c) => typeof c === 'string' && c.trim())
+  : [];
+const job = jobArg || regJob;
+if (!job) {
+  throw new Error(
+    'job не определён: args.job не задан, реестр проектов не найден или в записи нет jenkinsJob. ' +
+      `Проверенные пути: ${(reg?.checkedPaths ?? regPaths).join('; ')}. ` +
+      'Задай args.job или добавь запись в реестр (docs/agents-and-workflows.md §4).',
+  );
+}
+const branch = branchArg ?? (regBranch || null);
+const branchLine = branch ? `Ветка: ${branch}.` : 'Ветка: дефолт джобы.';
+
 // Run-журнал: план вызовов и факты прогона на диске — обрыв процесса или
 // выключение компьютера не теряют уже запущенную сборку (номер джобы известен
 // до начала ожидания). Возобновим только прогон со статусом RUNNING и известным
@@ -179,6 +238,8 @@ let jr = {
   workflow: 'build-autofix',
   tag,
   job,
+  project: projectName,
+  registry: reg?.missing === true ? null : (typeof reg?.path === 'string' ? reg.path : null),
   branch: branch ?? null,
   status: 'RUNNING',
   startedAt: NOW,
@@ -282,7 +343,9 @@ if (resume !== null) {
   jr.events = [{
     at: NOW,
     step: 'start',
-    detail: `новый прогон: job=${job}${branch ? `, ветка ${branch}` : ''}, попыток до ${maxAttempts}`,
+    detail: `новый прогон: job=${job}${branch ? `, ветка ${branch}` : ''}` +
+      (jobArg ? '' : ` (из реестра${projectName ? ` «${projectName}»` : ''})`) +
+      `, попыток до ${maxAttempts}`,
   }];
 }
 await saveJournal();
@@ -395,6 +458,18 @@ for (let attempt = startAttempt; attempt <= maxAttempts; attempt++) {
   if (!triage.fixable) {
     phase('Result');
     return await done({ status: 'NOT_FIXABLE', attempt, attempts, triage });
+  }
+  // Политика проекта из реестра: перечисленные категории не чиним, даже если
+  // триаж считает фикс возможным — решение владельца проекта, не агента.
+  if (notFixable.indexOf(triage.category) !== -1) {
+    phase('Result');
+    return await done({
+      status: 'NOT_FIXABLE',
+      attempt,
+      attempts,
+      triage,
+      message: `категория «${triage.category}» входит в notFixableCategories проекта ${projectName ?? '?'} — фикс не запускается по политике реестра`,
+    });
   }
 
   phase('Fix');

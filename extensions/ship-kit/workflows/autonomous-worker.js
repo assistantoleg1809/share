@@ -398,6 +398,8 @@ if (!done && state.phase === 'PR_WAIT') {
         tag: key,
         journal: journalDir(state, key) + '/run-build.json',
         now,
+        registry: A?.registry,
+        project: A?.project,
         modelFast: A?.modelFast,
         modelExpert: A?.modelExpert,
       });
@@ -499,6 +501,8 @@ if (!done && state.phase === 'DEPLOY') {
       tag: key,
       journal: journalDir(state, key) + '/run-deploy.json',
       now,
+      registry: A?.registry,
+      project: A?.project,
       modelFast: A?.modelFast,
       modelExpert: A?.modelExpert,
     });

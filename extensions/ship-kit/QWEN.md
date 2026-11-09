@@ -19,6 +19,11 @@
   (`openspec/changes/<tag>/run-*.json` при `tag`, иначе `.qwen/ship-kit/runs/`);
   после обрыва (вплоть до перезагрузки) прогон продолжает уже запущенную
   джобу, не запуская дубль. Воркер передаёт `tag`/`journal` вложенным вызовам.
+- **Реестр проектов** (`ship-kit.projects.json` в корне проекта или
+  `~/.qwen/ship-kit/projects.json`): `jenkinsJob`/`deployJob`/`branchDefault`/
+  `context`/`errorPolicy.notFixableCategories` per проект. Читается каждым
+  прогоном первым делом; args сильнее реестра; политика `notFixableCategories`
+  останавливает фикс по категории триажа.
 - **Скилл** `adapt-agents-workflows` — ОБЯЗАТЕЛЬНЫЕ правила любой доработки
   агентов и workflows (точки адаптации, инварианты, критерии «универсальный
   или проектный»). Читать его перед любой правкой комплекта.

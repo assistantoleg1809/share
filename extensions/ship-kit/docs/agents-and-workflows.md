@@ -103,7 +103,7 @@ e2e/
 
 ## 4. `/build-autofix` — сборка с исправлением ошибки сборки
 
-Аргументы: `{ job, branch?, maxAttempts? = 3, tag?, journal?, now?, modelFast?, modelExpert? }`.
+Аргументы: `{ job?, branch?, maxAttempts? = 3, tag?, journal?, now?, registry?, project?, modelFast?, modelExpert? }`.
 
 Цикл (до 3 попыток): **trigger** (одна попытка запуска, агент build-trigger) →
 **watch** (цепочка агентов build-status, каждый до ~8 минут с `sleep 45`;
@@ -154,11 +154,41 @@ trigger не выполняется. Терминальный статус (`SUC
 - На агента — 10 минут; поэтому ожидание организовано цепочкой наблюдателей.
 - Итог `WATCH_TIMEOUT` означает «не дождались за ~64 минуты», а не «сборка упала».
 
+**Реестр проектов (конфиг читается первым делом).** Каждый прогон build/deploy-autofix
+ищет реестр по цепочке (первый существующий файл — рабочий): `args.registry` →
+`ship-kit.projects.json` в корне проекта → `.qwen/ship-kit/projects.json` →
+`~/.qwen/ship-kit/projects.json` (центральный, на несколько проектов). Формат:
+
+```json
+{
+  "defaultProject": "calc",
+  "projects": {
+    "calc": {
+      "jenkinsJob": "calc-app",
+      "deployJob": "calc-app-deploy",
+      "branchDefault": "main",
+      "context": "что за проект и его особенности (строка, идёт в run-журнал)",
+      "errorPolicy": { "notFixableCategories": ["infra", "sonar"] }
+    }
+  }
+}
+```
+
+Правила: `job` из args сильнее реестра; `branch` из args сильнее `branchDefault`;
+`project` из args сильнее `defaultProject` (имени нет в реестре — ошибка со
+списком доступных). Нет ни `args.job`, ни записи с джобой — ошибка перечисляет
+все проверенные пути цепочки. `notFixableCategories` — политика владельца
+проекта: категория триажа из списка → `NOT_FIXABLE` без запуска фикса, даже
+если триаж считал фикс возможным. Воркер проксирует `registry`/`project` в
+вложенные вызовы — политики действуют и в его прогонах. Два режима запуска:
+с реестром (job/ветка/политики из конфига) и «в проекте без контекста»
+(реестра нет — всё из args, при отсутствии job внятная ошибка с путями поиска).
+
 ## 4a. `/deploy-autofix` — вторая ступень для EFS-проектов
 
-Аргументы: `{ job, branch?, maxAttempts? = 2, tag?, journal?, now?, modelFast?, modelExpert? }`.
-Run-журнал — тот же механизм, файл `run-deploy.json`, возобновление по номеру
-запущенного деплоя (см. §4).
+Аргументы: `{ job?, branch?, maxAttempts? = 2, tag?, journal?, now?, registry?, project?, modelFast?, modelExpert? }`.
+Реестр — тот же механизм, файл `run-deploy.json`, возобновление по номеру
+запущенного деплоя (см. §4); из записи реестра берётся `deployJob`.
 Тот же цикл, что у сборки, но из собственной линейки агентов: **deploy-trigger**
 (только `trigger_deploy`) → **deploy-status** (ожидание) → **deploy-triage**
 (приоритет деплой-специфики: открытые тикеты DevOps по тексту ошибки →
@@ -265,6 +295,11 @@ args: `{ now, modelFast: '<id>', modelExpert: '<id>' }`; без них — мо�
   `openspec/changes/*/run-*.json`): журнал — runtime-состояние, незакоммиченный
   файл «пачкает» дерево и роняет `isolation: 'worktree'` фикс-агентов (урок
   e2e №2/№3).
+- **Реестр проектов** (механика — §4): `ship-kit.projects.json` в корне проекта
+  или центральный `~/.qwen/ship-kit/projects.json` на несколько проектов;
+  `defaultProject` + записи `jenkinsJob`/`deployJob`/`branchDefault`/`context`/
+  `errorPolicy.notFixableCategories`. Читается каждым прогоном до траты
+  попыток; args всегда сильнее реестра.
 - Корпоративный режим: `tools.workflowNameOnly: true` + правила разрешения
   `Workflow(name:ship-kit:build-autofix)`,
   `Workflow(name:ship-kit:deploy-autofix)`,
