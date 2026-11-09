@@ -3,8 +3,11 @@
 Комплект из 11 агентов, 3 workflows и испытательного стенда (моки 6 MCP +
 e2e-таргет с инжектированным багом), собранный по рабочему процессу
 «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление».
-Копируется в целевой проект целиком (`.qwen/agents/`, `.qwen/workflows/`) и
-донастраивается по чек-листу в конце.
+Копируется в целевой проект целиком (`.qwen/agents/`, `.qwen/workflows/`,
+`.qwen/skills/adapt-agents-workflows/`) и донастраивается по чек-листу в конце.
+Обязательные правила любой доработки агентов и workflows (границы «универсальный
+или проектный», инварианты) — скилл
+[.qwen/skills/adapt-agents-workflows/SKILL.md](../.qwen/skills/adapt-agents-workflows/SKILL.md).
 
 Основа: Qwen Code 0.24.6, исследование [qwen-workflows.md](../qwen-workflows.md)
 и [qwen-workflows-dev-guide.md](../qwen-workflows-dev-guide.md); e2e-уроки —
@@ -30,6 +33,8 @@ e2e-таргет с инжектированным багом), собранны
     build-autofix.js        /build-autofix — сборка с исправлением (3 попытки)
     deploy-autofix.js       /deploy-autofix — deploy-джоба с разбором ошибок деплоя
     autonomous-worker.js    /autonomous-worker — один тик автономного воркера
+  skills/
+    adapt-agents-workflows/ правила доработки агентов/workflows (обязательные)
   autonomous-worker/
     state.json           состояние воркера (gitignore)
   settings.json          MCP-моки стенда (см. §6, при переносе заменить)
@@ -258,6 +263,12 @@ rm -rf e2e/bare.git e2e/e2e-run && git init --bare -q e2e/bare.git && git push -
 Журнал прогонов с находками: [e2e/e2e-run.md](../e2e/e2e-run.md).
 
 ## 7. Чек-лист адаптации под целевой проект
+
+Ниже — минимальный список точек адаптации. Полные обязательные правила доработки
+(инварианты, критерии «универсальный или проектный», когда создавать проектных
+агентов/workflows) — скилл
+[adapt-agents-workflows](../.qwen/skills/adapt-agents-workflows/SKILL.md);
+этот чек-лист — его раздел 1, менять список точек можно только вместе с ним.
 
 1. **Имена MCP-серверов.** Здесь `jenkins`, `jira`, `confluence`, `sonar`,
    `bitbucket`, `mmap`. Сверь со своими id в settings.json → mcpServers и
