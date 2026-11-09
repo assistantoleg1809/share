@@ -1,0 +1,12 @@
+{
+  "name": "ship-kit-integrator",
+  "version": "0.1.0",
+  "displayName": {
+    "ru": "Ship Kit Integrator — встраивание ship-kit в контур",
+    "en": "Ship Kit Integrator — adapting ship-kit to an infrastructure"
+  },
+  "description": {
+    "ru": "Скилл-заготовка: сверка MCP-серверов контура с каноническими id расширения ship-kit, разрешение дублей/вариаций имён, анализ запусков по ID сессий Qwen. Адаптируется под рабочее расширение (структура будет дана владельцем).",
+    "en": "Draft skill: map a contour's MCP servers onto ship-kit canonical ids, resolve duplicates/name variants, analyze Qwen session runs. To be adapted into the owner's work extension."
+  }
+}
