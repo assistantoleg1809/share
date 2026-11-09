@@ -1,4 +1,4 @@
-# CICD Kit
+# Ship Kit
 
 Универсальный комплект агентов и workflows для конвейера
 «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление».
@@ -9,10 +9,10 @@
 
 - **Агенты** (`agents/*.md`, регистрируются под своими именами): reviewer,
   openspec, build/deploy × status/trigger/triage/fix, implementer.
-- **Workflows** (запуск с квалифицированным именем `/cicd-kit:<имя>`):
-  - `/cicd-kit:build-autofix` — сборка Jenkins с автоисправлением (3 попытки);
-  - `/cicd-kit:deploy-autofix` — deploy-джоба с разбором ошибок деплоя;
-  - `/cicd-kit:autonomous-worker` — один тик автономного воркера
+- **Workflows** (запуск с квалифицированным именем `/ship-kit:<имя>`):
+  - `/ship-kit:build-autofix` — сборка Jenkins с автоисправлением (3 попытки);
+  - `/ship-kit:deploy-autofix` — deploy-джоба с разбором ошибок деплоя;
+  - `/ship-kit:autonomous-worker` — один тик автономного воркера
     (Jira → спека → реализация → PR → сборка → деплой, если у задачи есть
     `deployJob`).
 - **Скилл** `adapt-agents-workflows` — ОБЯЗАТЕЛЬНЫЕ правила любой доработки
@@ -23,7 +23,7 @@
   deploy-status, deploy-triage, deploy-fix, openspec, implementer,
   reviewer): в скилле — вся методика роли; агент = границы (frontmatter) +
   подключение скилла без правок. Интерактивно человек идёт по тем же
-  скиллам (`/cicd-kit:build-trigger` → …; навигация — «Соседние шаги»);
+  скиллам (`/ship-kit:build-trigger` → …; навигация — «Соседние шаги»);
   автономно — workflows диспатчат агентов, агенты грузят свои скиллы.
 
 ## Условия работы

@@ -1,9 +1,9 @@
 {
-  "name": "cicd-kit",
+  "name": "ship-kit",
   "version": "0.1.0",
   "displayName": {
-    "ru": "CICD Kit — агенты и workflows CI/CD",
-    "en": "CICD Kit — CI/CD agents & workflows"
+    "ru": "Ship Kit — агенты и workflows конвейера «тикет → прод»",
+    "en": "Ship Kit — ticket-to-prod agents & workflows"
   },
   "description": {
     "ru": "Универсальный комплект: 11 агентов и 3 workflow для контура «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление» (Jenkins/Jira/Confluence/Sonar/Bitbucket через MCP) + обязательные правила доработки (скилл adapt-agents-workflows).",

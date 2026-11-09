@@ -4,11 +4,11 @@
 e2e-таргет с инжектированным багом), собранный по рабочему процессу
 «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление».
 
-Репозиторий сам является **расширением Qwen Code `cicd-kit`** (манифест
+Репозиторий сам является **расширением Qwen Code `ship-kit`** (манифест
 `qwen-extension.json` в корне, ресурсы в `agents/`, `workflows/`, `skills/`).
 Установка в целевой проект — `qwen extensions install <git-url этого репо>`
 (для разработки — `qwen extensions link <путь к репо>`); workflows затем
-запускаются под квалифицированными именами `/cicd-kit:build-autofix` и т.д.
+запускаются под квалифицированными именами `/ship-kit:build-autofix` и т.д.
 Альтернатива без расширения — режим копии: скопировать `agents/`, `workflows/`,
 `skills/` в `.qwen/` проекта и донастроить по чек-листу §7. Выбор режима и
 обязательные правила любой доработки — скилл
@@ -21,7 +21,7 @@ e2e-таргет с инжектированным багом), собранны
 ## 1. Состав
 
 ```
-qwen-extension.json      манифест расширения cicd-kit (name, version)
+qwen-extension.json      манифест расширения ship-kit (name, version)
 QWEN.md                  контекст расширения (краткая шпаргалка комплекта)
 agents/                  11 агентов (поставляются расширением под своими именами)
   reviewer.md            ревью кода, без MCP
@@ -35,7 +35,7 @@ agents/                  11 агентов (поставляются расши�
   deploy-triage.md       5 MCP: разбор падения деплоя (приоритет DevOps/инфра)
   deploy-fix.md          5 MCP + правки конфига/кода, TDD, commit, push
   implementer.md         Jira+Bitbucket + код: реализация, PR, замечания
-workflows/               workflows расширения (имена /cicd-kit:<имя>)
+workflows/               workflows расширения (имена /ship-kit:<имя>)
   build-autofix.js       сборка с исправлением (3 попытки)
   deploy-autofix.js      deploy-джоба с разбором ошибок деплоя
   autonomous-worker.js   один тик автономного воркера
@@ -167,9 +167,9 @@ Workflow не может жить вечно (wall-clock, нет таймеро�
 чекаут свободен — боль «бурных дней» закрыта) → `PR_WAIT` (опрос Bitbucket) →
 при замечаниях fix-цикл (implementer в том же worktree через `workingDir`:
 ответить, поправить, запушить, закрыть замечание; максимум 3 попытки, дальше
-`PR_STUCK`) → при MERGED — вложенный `cicd-kit:build-autofix` → SUCCESS и у
+`PR_STUCK`) → при MERGED — вложенный `ship-kit:build-autofix` → SUCCESS и у
 задачи есть `deployJob` → `DEPLOY` (следующий тик: вложенный
-`cicd-kit:deploy-autofix`) → `DONE`. Нет `deployJob` — после сборки сразу
+`ship-kit:deploy-autofix`) → `DONE`. Нет `deployJob` — после сборки сразу
 `DONE`. Наличие деплоя — свойство задачи/проекта (поле `deployJob` в Jira или
 реестре, собирается сканом или на шаге SPEC так же, как `jenkinsJob`).
 
@@ -205,19 +205,19 @@ args: `{ now, modelFast: '<id>', modelExpert: '<id>' }`; без них — мо�
 `jenkinsJob` заполняется из задачи/реестра при скане или на шаге SPEC; без него
 после merge вернётся `BUILD_FAILED` с подсказкой вписать вручную. `deployJob` —
 то же самое для deploy-ступени: поле есть → после зелёной сборки воркер прогонит
-`cicd-kit:deploy-autofix` (фаза `DEPLOY`, падение — `DEPLOY_FAILED` со звуком
+`ship-kit:deploy-autofix` (фаза `DEPLOY`, падение — `DEPLOY_FAILED` со звуком
 «Bottle»), поля нет → ступень пропускается целиком.
 
 ## 6. Включение и настройки
 
-- **Установка комплекта**: `qwen extensions install <git-url репо cicd-kit>` —
-  или для разработки `qwen extensions link /path/to/cicd-kit` (правки репо
+- **Установка комплекта**: `qwen extensions install <git-url репо ship-kit>` —
+  или для разработки `qwen extensions link /path/to/ship-kit` (правки репо
   подхватываются без переустановки). После установки агенты доступны под
-  своими именами, workflows — как `/cicd-kit:build-autofix`,
-  `/cicd-kit:deploy-autofix`, `/cicd-kit:autonomous-worker`. В проекте,
+  своими именами, workflows — как `/ship-kit:build-autofix`,
+  `/ship-kit:deploy-autofix`, `/ship-kit:autonomous-worker`. В проекте,
   где стоит расширение, не заводить `.qwen/agents/*.md` с теми же именами.
   Вложенные вызовы между workflow комплекта идут по квалифицированным
-  именам (`cicd-kit:...`) — голое имя ищет только проектные сохранённые
+  именам (`ship-kit:...`) — голое имя ищет только проектные сохранённые
   workflows. Имя workflow для расширения берётся из `meta.name` (не из
   имени файла) и обязано быть kebab-lowercase — иначе скрипт молча
   пропускается загрузчиком (урок e2e, 2026-11-09).
@@ -230,9 +230,9 @@ args: `{ now, modelFast: '<id>', modelExpert: '<id>' }`; без них — мо�
   (агенты расширения править нельзя); режим копии допускает переименование id
   с правкой deny/allow-list (чек-лист §7).
 - Корпоративный режим: `tools.workflowNameOnly: true` + правила разрешения
-  `Workflow(name:cicd-kit:build-autofix)`,
-  `Workflow(name:cicd-kit:deploy-autofix)`,
-  `Workflow(name:cicd-kit:autonomous-worker)` — модель сможет запускать
+  `Workflow(name:ship-kit:build-autofix)`,
+  `Workflow(name:ship-kit:deploy-autofix)`,
+  `Workflow(name:ship-kit:autonomous-worker)` — модель сможет запускать
   только эти workflows комплекта и ничего inline.
 - Вложенный `workflow()` разделяет лимиты внешнего прогона: тик со сборкой
   укладывается в общий wall-clock — для сессии-драйвера поднять
@@ -252,7 +252,7 @@ args: `{ now, modelFast: '<id>', modelExpert: '<id>' }`; без них — мо�
 build-trigger, deploy-trigger) `Skill` внесён в allowlist.
 
 - **Интерактивный режим** — человек идёт по тем же скиллам-ролям в главной
-  сессии (`/cicd-kit:build-trigger` → `…:build-status` → `…:build-triage`
+  сессии (`/ship-kit:build-trigger` → `…:build-status` → `…:build-triage`
   → `…:build-fix`; навигация — «Соседние шаги» в хвосте каждого скилла).
   Работает и без расширения: скопировать `skills/<роль>/` в `.qwen/skills/`
   проекта. Без агентов запреты («пуш только в рабочие ветки», «статусы Jira
@@ -290,12 +290,12 @@ build-trigger, deploy-trigger) `Skill` внесён в allowlist.
   (красная #1 → TDD-фикс → зелёная #2) → DONE + звук. У PRJ-42 нет `deployJob`,
   поэтому DEPLOY-ступень пропускается (проверяется отдельно, см. журнал).
 
-Прогон (из корня репо, одна строка; нужно установленное расширение cicd-kit —
-`qwen extensions link /путь/к/cicd-kit` — агенты и workflows в клон не входят,
+Прогон (из корня репо, одна строка; нужно установленное расширение ship-kit —
+`qwen extensions link /путь/к/ship-kit` — агенты и workflows в клон не входят,
 клон несёт только моки settings и таргет):
 
 ```
-rm -rf e2e/bare.git e2e/e2e-run && git init --bare -q e2e/bare.git && git push -q e2e/bare.git main:main && git clone -q e2e/bare.git e2e/e2e-run && rm -f e2e/e2e-run/.qwen/tmp/*-mock-state.json 2>/dev/null; cd e2e/e2e-run && QWEN_CODE_ENABLE_WORKFLOWS=1 qwen -y -p "Запусти сохранённый workflow build-autofix из расширения cicd-kit: вызови Workflow({ name: 'cicd-kit:build-autofix', args: { job: 'calc-app', modelFast: 'glm-5.3-flash', modelExpert: 'glm-5.3-flash' } }) и верни итог."
+rm -rf e2e/bare.git e2e/e2e-run && git init --bare -q e2e/bare.git && git push -q e2e/bare.git main:main && git clone -q e2e/bare.git e2e/e2e-run && rm -f e2e/e2e-run/.qwen/tmp/*-mock-state.json 2>/dev/null; cd e2e/e2e-run && QWEN_CODE_ENABLE_WORKFLOWS=1 qwen -y -p "Запусти сохранённый workflow build-autofix из расширения ship-kit: вызови Workflow({ name: 'ship-kit:build-autofix', args: { job: 'calc-app', modelFast: 'glm-5.3-flash', modelExpert: 'glm-5.3-flash' } }) и верни итог."
 ```
 
 `modelFast`/`modelExpert` = `glm-5.3-flash` в тестовых прогонах обязательны (стандарт Oleg):

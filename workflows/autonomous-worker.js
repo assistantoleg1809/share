@@ -19,10 +19,10 @@ export const meta = {
 // Терминальные фазы (DONE / *_FAILED / PR_DECLINED / PR_STUCK) закрываются следующим тиком.
 // Наличие деплоя — свойство задачи/проекта (deployJob в Jira или реестре), не кода.
 
-// Workflows комплекта поставляются расширением cicd-kit: вложенные вызовы
+// Workflows комплекта поставляются расширением ship-kit: вложенные вызовы
 // идут по квалифицированному имени <extension>:<name> (голое имя ищет только
 // проектные сохранённые workflows).
-const KIT = 'cicd-kit';
+const KIT = 'ship-kit';
 
 const STATE_PATH = '.qwen/autonomous-worker/state.json';
 
