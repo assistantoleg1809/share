@@ -1,4 +1,4 @@
 .qwen/tmp/
 .qwen/autonomous-worker/
-extensions/e2e/bare.git/
-extensions/e2e/e2e-run/
+extensions/ship-kit/e2e/bare.git/
+extensions/ship-kit/e2e/e2e-run/

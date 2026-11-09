@@ -3,7 +3,7 @@
 const readline = require('readline');
 
 const PAGES = {
-  'Runbook сборки calc-app': 'Runbook: при SyntaxError в extensions/e2e/target/app.py проверь двоеточие в сигнатуре def (смотри строку из лога). Проверка локально: python3 -c "import sys; sys.path.insert(0, \'extensions/e2e/target\'); import app". Тесты: python3 -m pytest extensions/e2e/target/ -q (если pytest недоступен — достаточно импорта).',
+  'Runbook сборки calc-app': 'Runbook: при SyntaxError в extensions/ship-kit/e2e/target/app.py проверь двоеточие в сигнатуре def (смотри строку из лога). Проверка локально: python3 -c "import sys; sys.path.insert(0, \'extensions/ship-kit/e2e/target\'); import app". Тесты: python3 -m pytest extensions/ship-kit/e2e/target/ -q (если pytest недоступен — достаточно импорта).',
   'Runbook деплоя app-deploy': 'Runbook: ошибки «No space left on device» на deploy-агенте — известная проблема DevOps, тикет DEVOPS-4821. Со стороны кода не правится: передать в DevOps.',
 };
 

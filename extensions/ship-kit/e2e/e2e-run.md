@@ -1,11 +1,11 @@
 # E2E-прогоны эталона агентов и workflows (2026-11-06)
 
 Окружение: Qwen Code 0.24.6 (`/opt/homebrew/bin/qwen`), headless
-`QWEN_CODE_ENABLE_WORKFLOWS=1 qwen -y -p …`, моки из `extensions/mcp/` (подключены
-`.qwen/settings.json` под продакшн-id), изоляция — bare `extensions/e2e/bare.git`
-+ клон `extensions/e2e/e2e-run` (пуши агентов уходят только в bare).
+`QWEN_CODE_ENABLE_WORKFLOWS=1 qwen -y -p …`, моки из `extensions/ship-kit/mcp/` (подключены
+`.qwen/settings.json` под продакшн-id), изоляция — bare `extensions/ship-kit/e2e/bare.git`
++ клон `extensions/ship-kit/e2e/e2e-run` (пуши агентов уходят только в bare).
 
-Таргет: `extensions/e2e/target/app.py:19` — `def div(a, b)` без двоеточия (красное
+Таргет: `extensions/ship-kit/e2e/target/app.py:19` — `def div(a, b)` без двоеточия (красное
 состояние воспроизводится импортом; зелёное — 3 теста, включая
 `test_div_by_zero_returns_none`).
 

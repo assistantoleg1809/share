@@ -1,11 +1,11 @@
 {
   "mcpServers": {
-    "jenkins": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/mcp/jenkins/server.js"] },
-    "jira": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/mcp/jira/server.js"] },
-    "confluence": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/mcp/confluence/server.js"] },
-    "sonar": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/mcp/sonar/server.js"] },
-    "bitbucket": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/mcp/bitbucket/server.js"] },
-    "mmap": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/mcp/mmap/server.js"] }
+    "jenkins": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/ship-kit/mcp/jenkins/server.js"] },
+    "jira": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/ship-kit/mcp/jira/server.js"] },
+    "confluence": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/ship-kit/mcp/confluence/server.js"] },
+    "sonar": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/ship-kit/mcp/sonar/server.js"] },
+    "bitbucket": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/ship-kit/mcp/bitbucket/server.js"] },
+    "mmap": { "command": "/opt/homebrew/bin/node", "args": ["/Users/oleg/projects/share/extensions/ship-kit/mcp/mmap/server.js"] }
   },
   "$version": 4
 }
