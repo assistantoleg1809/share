@@ -157,6 +157,13 @@ const SAFE_KEY = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const safeWorktree = (p) => (p !== null && p !== undefined && SAFE_WORKTREE.test(p) ? p : null);
 const safeBranch = (b) => (b !== null && b !== undefined && SAFE_BRANCH.test(b) ? b : null);
 
+// Run-журналы вложенных прогонов лежат в каталоге задачи OpenSpec (решение
+// Oleg 2026-11-09): openspec/changes/<тег>/ — тот же тег, что и спека задачи;
+// specDir ещё неизвестен — каталог по ключу задачи (журналист создаст сам).
+const SAFE_SPEC_DIR = /^[\w][\w./-]*$/;
+const journalDir = (state, key) =>
+  state.specDir && SAFE_SPEC_DIR.test(state.specDir) ? state.specDir : 'openspec/changes/' + key;
+
 if (!A?.now) {
   throw new Error('args.now обязателен (ISO-строка текущего времени) — драйвер передаёт его при каждом тике');
 }
@@ -388,6 +395,9 @@ if (!done && state.phase === 'PR_WAIT') {
         job,
         branch: state.branch,
         maxAttempts: 3,
+        tag: key,
+        journal: journalDir(state, key) + '/run-build.json',
+        now,
         modelFast: A?.modelFast,
         modelExpert: A?.modelExpert,
       });
@@ -486,6 +496,9 @@ if (!done && state.phase === 'DEPLOY') {
       job: deployJob,
       branch: state.branch,
       maxAttempts: 2,
+      tag: key,
+      journal: journalDir(state, key) + '/run-deploy.json',
+      now,
       modelFast: A?.modelFast,
       modelExpert: A?.modelExpert,
     });

@@ -3,11 +3,11 @@ export const meta = {
   // и обязано быть kebab-lowercase — иначе загрузчик расширения молча пропустит скрипт.
   name: 'build-autofix',
   description:
-    'Запуск сборки Jenkins с возможностью исправления ошибки сборки: до 3 попыток «запуск → ожидание → триаж → фикс → push»',
+    'Запуск сборки Jenkins с возможностью исправления ошибки сборки: до 3 попыток «запуск → ожидание → триаж → фикс → push». Прогон ведёт run-журнал на диске и после обрыва продолжает уже запущенную сборку вместо повторного запуска',
   whenToUse:
     'Нужно собрать джобу и при падении автоматически разобрать причину, исправить код и пересобрать',
   phases: [
-    { title: 'MCP check', detail: 'Доступность Jenkins до траты попыток' },
+    { title: 'MCP check', detail: 'Доступность Jenkins и run-журнал прошлого прогона: продолжить или начать' },
     { title: 'Build & watch', detail: 'Запуск (одна попытка) и ожидание статуса сборки' },
     { title: 'Triage', detail: 'Разбор причины падения: лог, Jira DevOps, Confluence, Sonar, Bitbucket' },
     { title: 'Fix', detail: 'Минимальная правка, локальная проверка, commit, push' },
@@ -83,6 +83,22 @@ const WRITE = {
   required: ['ok'],
 };
 
+// Решение о resume — по ОДНОЙ строке _resume из журнала, а не по эху полей:
+// быстрая модель теряет поля JSON и превращает null в строку "null"
+// (поймано e2e 2026-11-09, раунды 2–3: status и номер читались, а branch/kind/
+// job — нет, прогон уходил в дубль). Короткую строку модель эхирует дословно.
+const JOURNAL = {
+  type: 'object',
+  properties: {
+    missing: { type: 'boolean' },
+    _resume: { type: 'string' },
+    updatedAt: { type: 'string' },
+    status: { type: 'string' },
+    attempts: { type: 'array', items: { type: 'object' } },
+    history: { type: 'array', items: { type: 'object' } },
+  },
+};
+
 // Headless-запуск передаёт args строкой — нормализуем (урок e2e из mcp-jenkins-test).
 const A = (typeof args === 'string') ? JSON.parse(args) : args;
 const withModel = (o, m) => { if (m) { o.model = m; } return o; };
@@ -95,6 +111,16 @@ const field = (text, k) => {
 // семантику дополнительно страхует сам git: remove отказывает на чужих путях).
 const SAFE_WORKTREE = /^[\w./-]*\.qwen\/worktrees\/[\w-]+$/;
 const safeWorktree = (p) => (p !== null && p !== undefined && SAFE_WORKTREE.test(p) ? p : null);
+// Тег задачи и путь журнала интерполируются в промпты файловых агентов —
+// тоже только через проверку формы (инвариант: новая точка интерполяции =
+// новый валидатор). Тег «PRJ-42 slack» → каталог openspec/changes/PRJ-42-slack/.
+const SAFE_JOURNAL = /^[\w][\w./-]*\.json$/;
+const slugTag = (t) => {
+  if (t === null || t === undefined) return null;
+  const s = String(t).trim().replace(/\s+/g, '-');
+  return /^[\w][\w.-]*$/.test(s) ? s : null;
+};
+const NOW = (typeof A?.now === 'string' && A.now) || null;
 
 const job = A?.job;
 if (!job) {
@@ -103,6 +129,22 @@ if (!job) {
 const branch = A?.branch;
 const maxAttempts = A?.maxAttempts ?? 3;
 const MAX_WATCHERS = 8;
+
+const tag = slugTag(A?.tag);
+let journalPath = null;
+if (typeof A?.journal === 'string' && SAFE_JOURNAL.test(A.journal)) {
+  journalPath = A.journal;
+} else if (typeof A?.journal === 'string') {
+  log(`args.journal «${A.journal}» не прошёл проверку формы — журнал в каталоге по умолчанию`);
+}
+if (journalPath === null) {
+  // Журнал живёт в каталоге задачи OpenSpec (решение Oleg 2026-11-09):
+  // переживает обрыв сессии и перезагрузку, лежит рядом со спекой задачи.
+  // Без тега — служебный каталог проекта, НЕ временный (tmp чистится).
+  journalPath = tag !== null
+    ? `openspec/changes/${tag}/run-build.json`
+    : '.qwen/ship-kit/runs/run-build.json';
+}
 
 const branchLine = branch ? `Ветка: ${branch}.` : 'Ветка: дефолт джобы.';
 
@@ -128,8 +170,122 @@ if (!probe.ok) {
   };
 }
 
+// Run-журнал: план вызовов и факты прогона на диске — обрыв процесса или
+// выключение компьютера не теряют уже запущенную сборку (номер джобы известен
+// до начала ожидания). Возобновим только прогон со статусом RUNNING и известным
+// номером сборки: новую джобу НЕ запускаем, смотрим ту же.
+let jr = {
+  kind: 'build',
+  workflow: 'build-autofix',
+  tag,
+  job,
+  branch: branch ?? null,
+  status: 'RUNNING',
+  startedAt: NOW,
+  updatedAt: NOW,
+  resumeOf: null,
+  plan: ['mcp-check', 'trigger', 'watch', 'triage', 'fix', 'result'],
+  maxAttempts,
+  attempts: [],
+  facts: { buildNumber: null, attempt: 0, fixCommit: null, fixBranch: null },
+  events: [],
+  history: [],
+};
+
 const attempts = [];
 let lastFix = null;
+
+async function saveJournal() {
+  jr.attempts = attempts;
+  jr.updatedAt = NOW;
+  // Строка-подсказка для resume: единственное, что читает следующий прогон.
+  jr._resume =
+    'job=' + jr.job +
+    ';branch=' + (jr.branch === null || jr.branch === undefined || jr.branch === '' ? '-' : jr.branch) +
+    ';number=' + (Number(jr.facts.buildNumber) > 0 ? Number(jr.facts.buildNumber) : 0) +
+    ';attempt=' + (jr.facts.attempt || 0) +
+    ';status=' + jr.status;
+  const w = await agent(
+    `Перезапиши файл ${journalPath} в корне репозитория этим содержимым целиком ` +
+      '(создай недостающие каталоги, ничего кроме этого файла не трогай):\n' +
+      `${JSON.stringify(jr, null, 2)}\nВерни ok=true.`,
+    withModel({ label: 'journal:write', schema: WRITE, effort: 'low' }, A?.modelFast),
+  );
+  if (w === null || !w.ok) {
+    log(`journal:write не удался — журнал ${journalPath} не обновлён (прогон продолжается)`);
+  }
+}
+
+// Каждая терминальная ветка выходит через done(): статус и накопленные
+// attempts обязаны попасть на диск до возврата.
+async function done(result) {
+  jr.status = result.status ?? 'UNKNOWN';
+  await saveJournal();
+  return result;
+}
+
+const prev = await agent(
+  `Прочитай файл ${journalPath} в корне репозитория (JSON run-журнала). Верни ровно четыре поля: ` +
+    'missing (true, если файла нет); _resume — строку _resume из файла ПОСИМВОЛЬНО ' +
+    '(она короткая, вида job=...;branch=...;number=...;attempt=...;status=...); ' +
+    'attempts (массив из файла как есть, если есть); history (массив из файла как есть, если есть). ' +
+    'Другие поля не возвращай.',
+  withModel({ label: 'journal:read', schema: JOURNAL, effort: 'low' }, A?.modelFast),
+);
+const hint = prev !== null && typeof prev._resume === 'string' ? prev._resume.trim() : null;
+const h = hint !== null
+  ? hint.match(/^job=([^;]+);branch=([^;]*);number=(\d+);attempt=(\d+);status=([A-Z_]+)$/)
+  : null;
+const hintOk = h !== null && h[1] === job &&
+  (h[2] === '-' ? null : h[2]) === (branch ?? null) &&
+  Number(h[3]) > 0 && h[5] === 'RUNNING';
+let resume = null;
+if (hintOk) {
+  resume = prev;
+} else if (prev !== null && prev.missing !== true) {
+  // Прошлый прогон терминальный (или чужой) — в архив; новый начнётся с чистого
+  // журнала, история сохраняется в том же файле.
+  jr.history = (Array.isArray(prev.history) ? prev.history : [])
+    .concat([{
+      finishedAt: typeof prev.updatedAt === 'string' ? prev.updatedAt : null,
+      status: h !== null ? h[5] : (typeof prev.status === 'string' ? prev.status : 'UNKNOWN'),
+      buildNumber: h !== null ? (Number(h[3]) || null) : null,
+    }])
+    .slice(-10);
+}
+let startAttempt = 1;
+let resumeBuildNumber = null;
+if (resume !== null) {
+  resumeBuildNumber = Number(h[3]);
+  startAttempt = Math.max(1, Number(h[4]) || 1);
+  jr.resumeOf = resumeBuildNumber;
+  jr.attempts = Array.isArray(prev.attempts) ? prev.attempts : [];
+  jr.facts = {
+    buildNumber: resumeBuildNumber,
+    attempt: startAttempt,
+    fixCommit: null,
+    fixBranch: null,
+  };
+  jr.events = [{
+    at: NOW,
+    step: 'resume',
+    detail: `продолжение после обрыва: сборка #${resumeBuildNumber} уже запущена — повторный trigger не нужен`,
+  }];
+  jr.history = Array.isArray(prev.history) ? prev.history : [];
+  // Прошлые попытки — в рабочий массив: done() пишет в журнал in-memory
+  // attempts, без подсева история попыток затиралась бы пустым списком.
+  for (const a of (Array.isArray(prev.attempts) ? prev.attempts : [])) {
+    attempts.push(a);
+  }
+  log(`Run-журнал: продолжаю оборванный прогон — сборка #${resumeBuildNumber} (попытка ${startAttempt}), новую джобу не запускаю`);
+} else {
+  jr.events = [{
+    at: NOW,
+    step: 'start',
+    detail: `новый прогон: job=${job}${branch ? `, ветка ${branch}` : ''}, попыток до ${maxAttempts}`,
+  }];
+}
+await saveJournal();
 
 async function cleanupWorktree(worktreePath) {
   if (!worktreePath) return;
@@ -147,22 +303,38 @@ async function cleanupWorktree(worktreePath) {
   }
 }
 
-for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+for (let attempt = startAttempt; attempt <= maxAttempts; attempt++) {
+  jr.facts.attempt = attempt;
   phase('Build & watch');
-  const trigger = await agent(
-    `Запусти сборку джобы ${job}. ${branchLine} Одна попытка, без ретраев. Верни номер сборки и url.`,
-    withModel({ agentType: 'build-trigger', label: `trigger:${attempt}`, schema: TRIGGER, effort: 'low' }, A?.modelFast),
-  );
-  if (trigger === null || !trigger.ok) {
-    return {
-      status: 'TRIGGER_FAILED',
-      attempt,
-      attempts,
-      error: trigger === null ? 'агент запуска не завершился' : (trigger.error ?? 'неизвестная ошибка запуска'),
-    };
+  let buildNumber = null;
+  let triggerUrl = null;
+  if (resumeBuildNumber !== null && attempt === startAttempt) {
+    buildNumber = resumeBuildNumber;
+    log(`Попытка ${attempt}: смотрю уже запущенную сборку #${buildNumber} (без нового запуска)`);
+  } else {
+    const trigger = await agent(
+      `Запусти сборку джобы ${job}. ${branchLine} Одна попытка, без ретраев. Верни номер сборки и url.`,
+      withModel({ agentType: 'build-trigger', label: `trigger:${attempt}`, schema: TRIGGER, effort: 'low' }, A?.modelFast),
+    );
+    if (trigger === null || !trigger.ok) {
+      return await done({
+        status: 'TRIGGER_FAILED',
+        attempt,
+        attempts,
+        error: trigger === null ? 'агент запуска не завершился' : (trigger.error ?? 'неизвестная ошибка запуска'),
+      });
+    }
+    buildNumber = trigger.buildNumber ?? null;
+    triggerUrl = trigger.url ?? null;
+    log(`Попытка ${attempt}: сборка #${buildNumber} запущена`);
+    // Номер запущенной сборки — на диск ДО ожидания: обрыв между trigger и
+    // watch не должен рождать повторный запуск (главный риск обрыва).
+    jr.facts.buildNumber = buildNumber;
+    jr.events = jr.events
+      .concat([{ at: NOW, step: 'trigger', detail: `попытка ${attempt}: сборка #${buildNumber} запущена` }])
+      .slice(-50);
+    await saveJournal();
   }
-  const buildNumber = trigger.buildNumber ?? null;
-  log(`Попытка ${attempt}: сборка #${buildNumber} запущена`);
 
   let status = null;
   for (let watcher = 1; watcher <= MAX_WATCHERS; watcher++) {
@@ -181,23 +353,25 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   }
 
   if (status === null || status.state === 'RUNNING' || status.state === 'UNKNOWN') {
-    return {
+    phase('Result');
+    await cleanupWorktree(lastFix === null ? null : lastFix.worktree);
+    return await done({
       status: 'WATCH_TIMEOUT',
       attempt,
       attempts,
       buildNumber,
       message: `Сборка не завершилась за ${MAX_WATCHERS} наблюдателей (~64 мин) — проверь её вручную`,
-    };
+    });
   }
   if (status.state === 'SUCCESS') {
     phase('Result');
     await cleanupWorktree(lastFix === null ? null : lastFix.worktree);
-    return {
+    return await done({
       status: 'SUCCESS',
       attempt,
       buildNumber,
-      url: status.url ?? trigger.url ?? null,
-    };
+      url: status.url ?? triggerUrl ?? null,
+    });
   }
 
   phase('Triage');
@@ -209,7 +383,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     withModel({ agentType: 'build-triage', label: `triage:${attempt}`, schema: TRIAGE, effort: 'high' }, A?.modelExpert),
   );
   if (triage === null) {
-    return { status: 'TRIAGE_FAILED', attempt, attempts, buildNumber };
+    return await done({ status: 'TRIAGE_FAILED', attempt, attempts, buildNumber });
   }
   attempts.push({
     attempt,
@@ -220,7 +394,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   });
   if (!triage.fixable) {
     phase('Result');
-    return { status: 'NOT_FIXABLE', attempt, attempts, triage };
+    return await done({ status: 'NOT_FIXABLE', attempt, attempts, triage });
   }
 
   phase('Fix');
@@ -247,7 +421,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   if (!fixOk || !fixPushed) {
     phase('Result');
     // worktree не прибираем: человеку нужен каталог с незавершённым фиксом
-    return {
+    return await done({
       status: 'FIX_FAILED',
       attempt,
       attempts,
@@ -261,7 +435,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             worktree: fixWorktree,
             excerpt: String(fix).slice(0, 300),
           },
-    };
+    });
   }
   // Фикс делается и на последней попытке: даже без пересборки человек получает
   // ветку с исправлением, а не только список диагнозов.
@@ -271,9 +445,15 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     branch: fixBranch ?? branch ?? null,
     worktree: safeWorktree(fixWorktree),
   };
+  jr.facts.fixCommit = fixCommit ?? null;
+  jr.facts.fixBranch = lastFix.branch;
+  jr.events = jr.events
+    .concat([{ at: NOW, step: 'fix', detail: `попытка ${attempt}: фикс ${fixCommit ?? '?'} запушен в ${lastFix.branch ?? '?'}` }])
+    .slice(-50);
+  await saveJournal();
   log(`Попытка ${attempt}: фикс ${fixCommit ?? '?'} запушен в ${fixBranch ?? branch ?? '?'} — пересборка`);
 }
 
 phase('Result');
 await cleanupWorktree(lastFix === null ? null : lastFix.worktree);
-return { status: 'EXHAUSTED', maxAttempts, attempts, lastFix };
+return await done({ status: 'EXHAUSTED', maxAttempts, attempts, lastFix });
