@@ -1,0 +1,12 @@
+{
+  "name": "cicd-kit",
+  "version": "0.1.0",
+  "displayName": {
+    "ru": "CICD Kit — агенты и workflows CI/CD",
+    "en": "CICD Kit — CI/CD agents & workflows"
+  },
+  "description": {
+    "ru": "Универсальный комплект: 11 агентов и 3 workflow для контура «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление» (Jenkins/Jira/Confluence/Sonar/Bitbucket через MCP) + обязательные правила доработки (скилл adapt-agents-workflows).",
+    "en": "Universal kit: 11 agents and 3 workflows for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop (Jenkins/Jira/Confluence/Sonar/Bitbucket via MCP) plus mandatory adaptation rules (adapt-agents-workflows skill)."
+  }
+}

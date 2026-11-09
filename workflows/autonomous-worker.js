@@ -1,19 +1,28 @@
 export const meta = {
-  name: 'Autonomous worker tick',
+  // Имя workflow: для расширений имя берётся ИЗ meta.name (не из имени файла)
+  // и обязано быть kebab-lowercase — иначе загрузчик расширения молча пропустит скрипт.
+  name: 'autonomous-worker',
   description:
-    'Тик автономного воркера: Jira → OpenSpec → реализация → PR → ревью → сборка. Драйвер цикла — /loop 5m, состояние в .qwen/autonomous-worker/state.json',
+    'Тик автономного воркера: Jira → OpenSpec → реализация → PR → ревью → сборка → деплой (если у задачи есть deployJob). Драйвер цикла — /loop 5m, состояние в .qwen/autonomous-worker/state.json',
   whenToUse:
     'Регулярный опрос Jira и продвижение назначенной задачи по конвейеру (вызывается планировщиком раз в 5 минут)',
   phases: [
     { title: 'State', detail: 'Чтение state.json и скан назначенных задач Jira' },
-    { title: 'Step', detail: 'Один шаг конвейера: spec / dev / pr-check (+fix) / build' },
+    { title: 'Step', detail: 'Один шаг конвейера: spec / dev / pr-check (+fix) / build / deploy' },
     { title: 'Result', detail: 'Отчёт тика и запись нового состояния' },
   ],
 };
 
 // Конвейер (машина состояний, ровно один шаг на тик):
-// IDLE → SPEC → DEV → PR_WAIT (fix-цикл ≤3) → MERGED → вложенный build-autofix → DONE → IDLE.
+// IDLE → SPEC → DEV → PR_WAIT (fix-цикл ≤3) → MERGED → вложенный build-autofix →
+// DEPLOY (вложенный deploy-autofix, ТОЛЬКО если у задачи есть deployJob) → DONE → IDLE.
 // Терминальные фазы (DONE / *_FAILED / PR_DECLINED / PR_STUCK) закрываются следующим тиком.
+// Наличие деплоя — свойство задачи/проекта (deployJob в Jira или реестре), не кода.
+
+// Workflows комплекта поставляются расширением cicd-kit: вложенные вызовы
+// идут по квалифицированному имени <extension>:<name> (голое имя ищет только
+// проектные сохранённые workflows).
+const KIT = 'cicd-kit';
 
 const STATE_PATH = '.qwen/autonomous-worker/state.json';
 
@@ -24,8 +33,8 @@ const STATE = {
     phase: {
       type: 'string',
       enum: [
-        'IDLE', 'SPEC', 'DEV', 'PR_WAIT',
-        'DONE', 'SPEC_FAILED', 'DEV_FAILED', 'BUILD_FAILED', 'PR_DECLINED', 'PR_STUCK',
+        'IDLE', 'SPEC', 'DEV', 'PR_WAIT', 'DEPLOY',
+        'DONE', 'SPEC_FAILED', 'DEV_FAILED', 'BUILD_FAILED', 'DEPLOY_FAILED', 'PR_DECLINED', 'PR_STUCK',
       ],
     },
     task: {
@@ -35,6 +44,7 @@ const STATE = {
         summary: { type: 'string' },
         url: { type: 'string' },
         jenkinsJob: { type: 'string' },
+        deployJob: { type: 'string' },
       },
       required: ['key'],
     },
@@ -72,6 +82,7 @@ const TASKS = {
           summary: { type: 'string' },
           url: { type: 'string' },
           jenkinsJob: { type: 'string' },
+          deployJob: { type: 'string' },
         },
         required: ['key', 'summary'],
       },
@@ -86,6 +97,7 @@ const SPEC = {
     ok: { type: 'boolean' },
     specDir: { type: 'string' },
     jenkinsJob: { type: 'string' },
+    deployJob: { type: 'string' },
     summary: { type: 'string' },
     questions: { type: 'array', items: { type: 'string' } },
     error: { type: 'string' },
@@ -179,10 +191,10 @@ delete state.missing;
 // нестандартной формы) не должен ронять тик бесконечно — сбрасываем в IDLE с
 // записью в историю. KNOWN_PHASES держать синхронно с enum схемы STATE.
 const KNOWN_PHASES = new Set([
-  'IDLE', 'SPEC', 'DEV', 'PR_WAIT',
-  'DONE', 'SPEC_FAILED', 'DEV_FAILED', 'BUILD_FAILED', 'PR_DECLINED', 'PR_STUCK',
+  'IDLE', 'SPEC', 'DEV', 'PR_WAIT', 'DEPLOY',
+  'DONE', 'SPEC_FAILED', 'DEV_FAILED', 'BUILD_FAILED', 'DEPLOY_FAILED', 'PR_DECLINED', 'PR_STUCK',
 ]);
-const NEEDS_TASK = { SPEC: true, DEV: true, PR_WAIT: true };
+const NEEDS_TASK = { SPEC: true, DEV: true, PR_WAIT: true, DEPLOY: true };
 const stateOk =
   KNOWN_PHASES.has(state.phase) &&
   (!NEEDS_TASK[state.phase] || (state.task && SAFE_KEY.test(state.task.key ?? '')));
@@ -207,7 +219,8 @@ if (!done && (state.phase === 'IDLE' || !state.phase)) {
   const scan = await agent(
     'Шаг 0 (доступность jira), затем: найди назначенные мне задачи Jira, готовые к работе ' +
       '(открытые / «к выполнению»), максимум 3, по приоритету. Для каждой: key, summary, url, ' +
-      'jenkinsJob — если имя джобы сборки видно из задачи, её полей или привязанного проекта. ' +
+      'jenkinsJob — если имя джобы сборки видно из задачи, её полей или привязанного проекта; ' +
+      'deployJob — если у проекта после сборки идёт деплой и имя deploy-джобы видно так же. ' +
       'Назначенных задач нет — верни пустой список.',
     withModel({ agentType: 'openspec', label: 'jira:scan', schema: TASKS, effort: 'low' }, A?.modelFast),
   );
@@ -254,6 +267,9 @@ if (!done && state.phase === 'SPEC') {
     state.specDir = spec.specDir ?? null;
     if (!state.task.jenkinsJob && spec.jenkinsJob) {
       state.task = { ...state.task, jenkinsJob: spec.jenkinsJob };
+    }
+    if (!state.task.deployJob && spec.deployJob) {
+      state.task = { ...state.task, deployJob: spec.deployJob };
     }
     state.history = history(state, 'spec-done');
     // Спека пишется в основной чекаут — коммитим её сразу: DEV-шаг требует
@@ -368,7 +384,7 @@ if (!done && state.phase === 'PR_WAIT') {
       report = { status: 'BUILD_FAILED', task: key, error: state.lastError };
     } else {
       log(`Ветка слита — вызов build-autofix для ${job}`);
-      const build = await workflow('build-autofix', {
+      const build = await workflow(KIT + ':build-autofix', {
         job,
         branch: state.branch,
         maxAttempts: 3,
@@ -381,9 +397,17 @@ if (!done && state.phase === 'PR_WAIT') {
         state.history = history(state, 'build-failed');
         report = { status: 'BUILD_FAILED', task: key, error: state.lastError };
       } else if (build.status === 'SUCCESS') {
-        state.phase = 'DONE';
-        state.history = history(state, 'done');
-        report = { status: 'DONE', task: key, build };
+        const deployJob = state.task?.deployJob;
+        if (deployJob) {
+          // Деплой — отдельный тик: сборка уже съела большую часть лимитов прогона.
+          state.phase = 'DEPLOY';
+          state.history = history(state, 'build-done');
+          report = { status: 'BUILD_DONE', task: key, deployJob, build };
+        } else {
+          state.phase = 'DONE';
+          state.history = history(state, 'done');
+          report = { status: 'DONE', task: key, build };
+        }
       } else {
         state.phase = 'BUILD_FAILED';
         state.lastError = `build-autofix завершился со статусом ${build.status}`;
@@ -446,6 +470,44 @@ if (!done && state.phase === 'PR_WAIT') {
   done = true;
 }
 
+if (!done && state.phase === 'DEPLOY') {
+  // Ступень EFS-проектов: после успешной сборки — deploy-джоба. Запускается
+  // только когда у задачи есть deployJob (данные из Jira/реестра); его нет —
+  // эта фаза вообще не наступает (переход MERGED→DONE минует её).
+  const deployJob = state.task?.deployJob;
+  if (!deployJob) {
+    // Защита от state, в котором DEPLOY попал без deployJob (правка вручную).
+    state.phase = 'DONE';
+    state.history = history(state, 'done');
+    report = { status: 'DONE', task: key, note: 'DEPLOY без deployJob — шаг пропущен' };
+  } else {
+    log(`Сборка зелёная — вызов deploy-autofix для ${deployJob}`);
+    const deploy = await workflow(KIT + ':deploy-autofix', {
+      job: deployJob,
+      branch: state.branch,
+      maxAttempts: 2,
+      modelFast: A?.modelFast,
+      modelExpert: A?.modelExpert,
+    });
+    if (deploy === null) {
+      state.phase = 'DEPLOY_FAILED';
+      state.lastError = 'вложенный workflow deploy-autofix не стартовал (имя/файл не найдены)';
+      state.history = history(state, 'deploy-failed');
+      report = { status: 'DEPLOY_FAILED', task: key, error: state.lastError };
+    } else if (deploy.status === 'SUCCESS') {
+      state.phase = 'DONE';
+      state.history = history(state, 'done');
+      report = { status: 'DONE', task: key, deploy };
+    } else {
+      state.phase = 'DEPLOY_FAILED';
+      state.lastError = `deploy-autofix завершился со статусом ${deploy.status}`;
+      state.history = history(state, 'deploy-failed');
+      report = { status: 'DEPLOY_FAILED', task: key, deploy };
+    }
+  }
+  done = true;
+}
+
 if (!done) {
   // Терминальные фазы: прибираем worktree воркера, закрываем задачу в историю,
   // следующий тик возьмёт новую из Jira.
@@ -482,6 +544,7 @@ const SOUNDS = {
   SPEC_FAILED: 'Bottle.aiff',
   DEV_FAILED: 'Bottle.aiff',
   BUILD_FAILED: 'Bottle.aiff',
+  DEPLOY_FAILED: 'Bottle.aiff',
   PR_DECLINED: 'Bottle.aiff',
   PR_STUCK: 'Bottle.aiff',
 };

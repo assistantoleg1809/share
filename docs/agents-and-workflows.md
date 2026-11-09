@@ -3,11 +3,16 @@
 Комплект из 11 агентов, 3 workflows и испытательного стенда (моки 6 MCP +
 e2e-таргет с инжектированным багом), собранный по рабочему процессу
 «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление».
-Копируется в целевой проект целиком (`.qwen/agents/`, `.qwen/workflows/`,
-`.qwen/skills/adapt-agents-workflows/`) и донастраивается по чек-листу в конце.
-Обязательные правила любой доработки агентов и workflows (границы «универсальный
-или проектный», инварианты) — скилл
-[.qwen/skills/adapt-agents-workflows/SKILL.md](../.qwen/skills/adapt-agents-workflows/SKILL.md).
+
+Репозиторий сам является **расширением Qwen Code `cicd-kit`** (манифест
+`qwen-extension.json` в корне, ресурсы в `agents/`, `workflows/`, `skills/`).
+Установка в целевой проект — `qwen extensions install <git-url этого репо>`
+(для разработки — `qwen extensions link <путь к репо>`); workflows затем
+запускаются под квалифицированными именами `/cicd-kit:build-autofix` и т.д.
+Альтернатива без расширения — режим копии: скопировать `agents/`, `workflows/`,
+`skills/` в `.qwen/` проекта и донастроить по чек-листу §7. Выбор режима и
+обязательные правила любой доработки — скилл
+[skills/adapt-agents-workflows/SKILL.md](../skills/adapt-agents-workflows/SKILL.md).
 
 Основа: Qwen Code 0.24.6, исследование [qwen-workflows.md](../qwen-workflows.md)
 и [qwen-workflows-dev-guide.md](../qwen-workflows-dev-guide.md); e2e-уроки —
@@ -16,28 +21,32 @@ e2e-таргет с инжектированным багом), собранны
 ## 1. Состав
 
 ```
+qwen-extension.json      манифест расширения cicd-kit (name, version)
+QWEN.md                  контекст расширения (краткая шпаргалка комплекта)
+agents/                  11 агентов (поставляются расширением под своими именами)
+  reviewer.md            ревью кода, без MCP
+  openspec.md            Jira+Confluence+mmap → OpenSpec-документация
+  build-status.md        только Jenkins: статус/лог/ожидание сборки
+  build-trigger.md       только Jenkins: запуск сборки, одна попытка
+  build-triage.md        5 MCP: разбор причин падения сборки
+  build-fix.md           5 MCP + правки кода, TDD, commit, push
+  deploy-status.md       только Jenkins: статус/лог/ожидание деплоя
+  deploy-trigger.md      только Jenkins: запуск деплоя, одна попытка
+  deploy-triage.md       5 MCP: разбор падения деплоя (приоритет DevOps/инфра)
+  deploy-fix.md          5 MCP + правки конфига/кода, TDD, commit, push
+  implementer.md         Jira+Bitbucket + код: реализация, PR, замечания
+workflows/               workflows расширения (имена /cicd-kit:<имя>)
+  build-autofix.js       сборка с исправлением (3 попытки)
+  deploy-autofix.js      deploy-джоба с разбором ошибок деплоя
+  autonomous-worker.js   один тик автономного воркера
+skills/                  11 скиллов-ролей — строгое 1:1 с агентами (имена совпадают)
+  reviewer/  openspec/  implementer/
+  build-trigger/ build-status/ build-triage/ build-fix/
+  deploy-trigger/ deploy-status/ deploy-triage/ deploy-fix/
+  adapt-agents-workflows/ правила доработки агентов/workflows (мета, без пары-агента)
 .qwen/
-  agents/
-    reviewer.md         ревью кода, без MCP
-    openspec.md         Jira+Confluence+mmap → OpenSpec-документация
-    build-status.md     только Jenkins: статус/лог/ожидание сборки
-    build-trigger.md    только Jenkins: запуск сборки, одна попытка
-    build-triage.md     5 MCP: разбор причин падения сборки
-    build-fix.md        5 MCP + правки кода, TDD, commit, push
-    deploy-status.md    только Jenkins: статус/лог/ожидание деплоя
-    deploy-trigger.md   только Jenkins: запуск деплоя, одна попытка
-    deploy-triage.md    5 MCP: разбор падения деплоя (приоритет DevOps/инфра)
-    deploy-fix.md       5 MCP + правки конфига/кода, TDD, commit, push
-    implementer.md      Jira+Bitbucket + код: реализация, PR, замечания
-  workflows/
-    build-autofix.js        /build-autofix — сборка с исправлением (3 попытки)
-    deploy-autofix.js       /deploy-autofix — deploy-джоба с разбором ошибок деплоя
-    autonomous-worker.js    /autonomous-worker — один тик автономного воркера
-  skills/
-    adapt-agents-workflows/ правила доработки агентов/workflows (обязательные)
-  autonomous-worker/
-    state.json           состояние воркера (gitignore)
   settings.json          MCP-моки стенда (см. §6, при переносе заменить)
+  autonomous-worker/     state.json воркера (gitignore)
 mcp/                     6 stdio-моков + фикстуры логов (e2e-стенд)
 e2e/
   target/                таргет с инжектированным багом (app.py:19) + тесты
@@ -158,7 +167,11 @@ Workflow не может жить вечно (wall-clock, нет таймеро�
 чекаут свободен — боль «бурных дней» закрыта) → `PR_WAIT` (опрос Bitbucket) →
 при замечаниях fix-цикл (implementer в том же worktree через `workingDir`:
 ответить, поправить, запушить, закрыть замечание; максимум 3 попытки, дальше
-`PR_STUCK`) → при MERGED — вложенный `workflow('build-autofix')` → `DONE`.
+`PR_STUCK`) → при MERGED — вложенный `cicd-kit:build-autofix` → SUCCESS и у
+задачи есть `deployJob` → `DEPLOY` (следующий тик: вложенный
+`cicd-kit:deploy-autofix`) → `DONE`. Нет `deployJob` — после сборки сразу
+`DONE`. Наличие деплоя — свойство задачи/проекта (поле `deployJob` в Jira или
+реестре, собирается сканом или на шаге SPEC так же, как `jenkinsJob`).
 
 Терминальные фазы (`DONE`, `*_FAILED`, `PR_DECLINED`, `PR_STUCK`) на следующем
 тике закрываются в историю (worktree прибирается), и воркер берёт следующую
@@ -179,7 +192,7 @@ args: `{ now, modelFast: '<id>', modelExpert: '<id>' }`; без них — мо�
 ```json
 {
   "phase": "PR_WAIT",
-  "task": { "key": "PRJ-42", "summary": "...", "url": "...", "jenkinsJob": "app-build" },
+  "task": { "key": "PRJ-42", "summary": "...", "url": "...", "jenkinsJob": "app-build", "deployJob": "app-deploy" },
   "specDir": "openspec/changes/PRJ-42-login-timeout",
   "branch": "task/PRJ-42",
   "prId": 137,
@@ -190,28 +203,70 @@ args: `{ now, modelFast: '<id>', modelExpert: '<id>' }`; без них — мо�
 ```
 
 `jenkinsJob` заполняется из задачи/реестра при скане или на шаге SPEC; без него
-после merge вернётся `BUILD_FAILED` с подсказкой вписать вручную.
+после merge вернётся `BUILD_FAILED` с подсказкой вписать вручную. `deployJob` —
+то же самое для deploy-ступени: поле есть → после зелёной сборки воркер прогонит
+`cicd-kit:deploy-autofix` (фаза `DEPLOY`, падение — `DEPLOY_FAILED` со звуком
+«Bottle»), поля нет → ступень пропускается целиком.
 
 ## 6. Включение и настройки
 
+- **Установка комплекта**: `qwen extensions install <git-url репо cicd-kit>` —
+  или для разработки `qwen extensions link /path/to/cicd-kit` (правки репо
+  подхватываются без переустановки). После установки агенты доступны под
+  своими именами, workflows — как `/cicd-kit:build-autofix`,
+  `/cicd-kit:deploy-autofix`, `/cicd-kit:autonomous-worker`. В проекте,
+  где стоит расширение, не заводить `.qwen/agents/*.md` с теми же именами.
+  Вложенные вызовы между workflow комплекта идут по квалифицированным
+  именам (`cicd-kit:...`) — голое имя ищет только проектные сохранённые
+  workflows. Имя workflow для расширения берётся из `meta.name` (не из
+  имени файла) и обязано быть kebab-lowercase — иначе скрипт молча
+  пропускается загрузчиком (урок e2e, 2026-11-09).
 - `tools.workflowsEnabled: true` — только User/System scope (workspace-файл
   игнорируется), после рестарта. Проверка: `/workflows`. Для headless-прогона
   достаточно env: `QWEN_CODE_ENABLE_WORKFLOWS=1`.
 - `.qwen/settings.json` репозитория настроен на **моки стенда** (jenkins, jira,
-  confluence, sonar, bitbucket, mmap — stdio, ноль зависимостей). При переносе
-  в целевой проект замени записи на реальные серверы; workflows и агенты не
-  меняются — они обращаются к серверам по id.
+  confluence, sonar, bitbucket, mmap — stdio, ноль зависимостей). В целевом
+  проекте режим расширения требует **канонических id** серверов в mcpServers
+  (агенты расширения править нельзя); режим копии допускает переименование id
+  с правкой deny/allow-list (чек-лист §7).
 - Корпоративный режим: `tools.workflowNameOnly: true` + правила разрешения
-  `Workflow(name:build-autofix)`, `Workflow(name:deploy-autofix)`,
-  `Workflow(name:autonomous-worker)` — модель сможет запускать только эти
-  сохранённые workflows и ничего inline.
+  `Workflow(name:cicd-kit:build-autofix)`,
+  `Workflow(name:cicd-kit:deploy-autofix)`,
+  `Workflow(name:cicd-kit:autonomous-worker)` — модель сможет запускать
+  только эти workflows комплекта и ничего inline.
 - Вложенный `workflow()` разделяет лимиты внешнего прогона: тик со сборкой
   укладывается в общий wall-clock — для сессии-драйвера поднять
   `QWEN_CODE_MAX_WORKFLOW_SECONDS` (например 14400).
 - Скиллы OpenSpec используются агентами openspec/implementer; сами скиллы
   ставятся отдельно (пользовательский или проектный уровень).
 
-## 6a. Испытательный стенд (e2e)
+## 6a. Два режима исполнения: скиллы и агенты (1:1)
+
+Соответствие строгое: **11 агентов ↔ 11 скиллов-ролей с теми же именами**
+(исключение — мета-скилл `adapt-agents-workflows`, пары-агента у него
+намеренно нет). Вся методика (шаг 0, протокол, ограничения, формат отчёта)
+живёт в скилле; тело агента — границы (frontmatter: `tools`/
+`disallowedTools`/`approvalMode`) плюс обязательное подключение: вызвать
+`Skill` со своим скиллом и следовать целиком, без правок. Доступность
+`Skill` сабагенту проверена (2026-11-09); у allowlist-агентов (reviewer,
+build-trigger, deploy-trigger) `Skill` внесён в allowlist.
+
+- **Интерактивный режим** — человек идёт по тем же скиллам-ролям в главной
+  сессии (`/cicd-kit:build-trigger` → `…:build-status` → `…:build-triage`
+  → `…:build-fix`; навигация — «Соседние шаги» в хвосте каждого скилла).
+  Работает и без расширения: скопировать `skills/<роль>/` в `.qwen/skills/`
+  проекта. Без агентов запреты («пуш только в рабочие ветки», «статусы Jira
+  не трогать») — дисциплина текста, не механика.
+- **Автономный режим** — агенты и workflows: механические границы прав,
+  контракты (schema), тики воркера. Воркер в скилл-режим не переводится:
+  тик по расписанию без человека требует агентов и state.json.
+
+Цикл (порядок шагов, ≤3 попыток сборки / ≤2 деплоя) знает workflow
+(автономно) или человек (интерактивно); скилл-роль отвечает только за свой
+шаг. Правка методики — только в скилле; правки методики в теле агента
+запрещены (правило §2.3 скилла adapt-agents-workflows).
+
+## 6b. Испытательный стенд (e2e)
 
 Моки живут в `mcp/` и подключены `.qwen/settings.json` под **продакшн-id**
 (`jenkins`, а не `jenkins-mock`) — чтобы проверялись сами allowlist/deny-list
@@ -232,13 +287,20 @@ args: `{ now, modelFast: '<id>', modelExpert: '<id>' }`; без них — мо�
   затрагивается.
 - **Полный сценарий**: скан Jira (PRJ-42 с jenkinsJob) → спека → реализация в
   worktree → PR c замечанием → устранение → MERGED → вложенный build-autofix
-  (красная #1 → TDD-фикс → зелёная #2) → DONE + звук.
+  (красная #1 → TDD-фикс → зелёная #2) → DONE + звук. У PRJ-42 нет `deployJob`,
+  поэтому DEPLOY-ступень пропускается (проверяется отдельно, см. журнал).
 
-Прогон (из корня репо, одна строка):
+Прогон (из корня репо, одна строка; нужно установленное расширение cicd-kit —
+`qwen extensions link /путь/к/cicd-kit` — агенты и workflows в клон не входят,
+клон несёт только моки settings и таргет):
 
 ```
-rm -rf e2e/bare.git e2e/e2e-run && git init --bare -q e2e/bare.git && git push -q e2e/bare.git main:main && git clone -q e2e/bare.git e2e/e2e-run && rm -f e2e/e2e-run/.qwen/tmp/*-mock-state.json 2>/dev/null; cd e2e/e2e-run && QWEN_CODE_ENABLE_WORKFLOWS=1 qwen -y -p "Запусти сохранённый workflow build-autofix: вызови Workflow({ name: 'build-autofix', args: { job: 'calc-app' } }) и верни итог."
+rm -rf e2e/bare.git e2e/e2e-run && git init --bare -q e2e/bare.git && git push -q e2e/bare.git main:main && git clone -q e2e/bare.git e2e/e2e-run && rm -f e2e/e2e-run/.qwen/tmp/*-mock-state.json 2>/dev/null; cd e2e/e2e-run && QWEN_CODE_ENABLE_WORKFLOWS=1 qwen -y -p "Запусти сохранённый workflow build-autofix из расширения cicd-kit: вызови Workflow({ name: 'cicd-kit:build-autofix', args: { job: 'calc-app', modelFast: 'glm-5.3-flash', modelExpert: 'glm-5.3-flash' } }) и верни итог."
 ```
+
+`modelFast`/`modelExpert` = `glm-5.3-flash` в тестовых прогонах обязательны (стандарт Oleg):
+без них агенты уходят на дефолт сессии (glm-5.3) и сжигают кредиты подписки —
+урок прогона 13, ~95 дорогих запросов за три прогона.
 
 Грабли, пойманные e2e (уже закрыты в эталоне, помни о них при тиражировании):
 
@@ -264,10 +326,13 @@ rm -rf e2e/bare.git e2e/e2e-run && git init --bare -q e2e/bare.git && git push -
 
 ## 7. Чек-лист адаптации под целевой проект
 
-Ниже — минимальный список точек адаптации. Полные обязательные правила доработки
-(инварианты, критерии «универсальный или проектный», когда создавать проектных
-агентов/workflows) — скилл
-[adapt-agents-workflows](../.qwen/skills/adapt-agents-workflows/SKILL.md);
+Ниже — минимальный список точек адаптации для **режима копии**. В **режиме
+расширения** файлы комплекта не правятся: единственная точка — канонические id
+MCP-серверов (`jenkins`, `jira`, `confluence`, `sonar`, `bitbucket`, `mmap`) в
+`settings.json` проекта; не сводится к ним — это режим копии или проектный
+форк. Полные обязательные правила доработки (инварианты, критерии «универсальный
+или проектный», когда создавать проектных агентов/workflows) — скилл
+[adapt-agents-workflows](../skills/adapt-agents-workflows/SKILL.md);
 этот чек-лист — его раздел 1, менять список точек можно только вместе с ним.
 
 1. **Имена MCP-серверов.** Здесь `jenkins`, `jira`, `confluence`, `sonar`,

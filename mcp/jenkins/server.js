@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // jenkins — эталонный stdio MCP-мок для e2e эталона агентов/workflows.
 // Имена сервера и инструментов совпадают с продакшн-идентикаторами из
-// .qwen/agents/* (mcp__jenkins__trigger_build и т.д.).
+// .qwen/agents/* в режиме копии; в режиме расширения — agent-файлы комплекта
+// (mcp__jenkins__trigger_build и т.д.).
 // Детерминизм: первый запуск сборки/деплоя → FAILURE (фикстура), далее SUCCESS.
 // Статус: первый опрос каждого запуска → RUNNING, далее терминальный.
 // Состояние — в файле .qwen/tmp/jenkins-mock-state.json в cwd сессии: каждый
