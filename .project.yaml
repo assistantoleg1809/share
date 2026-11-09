@@ -1,12 +1,12 @@
 version: 1
 
-name: share
+name: ship-kit
 status: active
 stage: mvp
 
 hypothesis:
   state: testing
-  statement: "Проверка гипотезы проекта share"
+  statement: "Проверка гипотезы проекта ship-kit"
 
 release:
   current: null
