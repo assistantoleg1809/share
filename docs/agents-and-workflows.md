@@ -291,8 +291,10 @@ build-trigger, deploy-trigger) `Skill` внесён в allowlist.
   поэтому DEPLOY-ступень пропускается (проверяется отдельно, см. журнал).
 
 Прогон (из корня репо, одна строка; нужно установленное расширение ship-kit —
-`qwen extensions link /путь/к/ship-kit` — агенты и workflows в клон не входят,
-клон несёт только моки settings и таргет):
+постоянная копия `qwen extensions install /путь/к/ship-kit --consent` (кладётся
+в `~/.qwen/extensions/ship-kit`; без `--consent` в headless виснет на запросе
+согласия) или дев-режим `qwen extensions link /путь/к/ship-kit` — агенты и
+workflows в клон не входят, клон несёт только моки settings и таргет):
 
 ```
 rm -rf e2e/bare.git e2e/e2e-run && git init --bare -q e2e/bare.git && git push -q e2e/bare.git main:main && git clone -q e2e/bare.git e2e/e2e-run && rm -f e2e/e2e-run/.qwen/tmp/*-mock-state.json 2>/dev/null; cd e2e/e2e-run && QWEN_CODE_ENABLE_WORKFLOWS=1 qwen -y -p "Запусти сохранённый workflow build-autofix из расширения ship-kit: вызови Workflow({ name: 'ship-kit:build-autofix', args: { job: 'calc-app', modelFast: 'glm-5.3-flash', modelExpert: 'glm-5.3-flash' } }) и верни итог."
