@@ -280,9 +280,10 @@ build-trigger, deploy-trigger) `Skill` внесён в allowlist.
 - **Детерминизм**: первый запуск сборки/деплоя → FAILURE (фикстура лога),
   далее SUCCESS; первый опрос статуса → RUNNING (тренирует цепочку
   наблюдателей и sleep-цикл), далее терминальный.
-- **Таргет с багом**: `e2e/target/app.py:19` — `def div(a, b)` без двоеточия;
-  воспроизводится локально импортом (`python3 -c "import sys; sys.path.insert(0,'e2e/target'); import app"`), чинится правкой в один символ.
-- **Изоляция прогона**: bare-репозиторий + клон (`e2e/bare.git`, `e2e/e2e-run`,
+- **Таргет с багом**: `extensions/e2e/target/app.py:19` — `def div(a, b)` без двоеточия;
+  воспроизводится локально импортом (`python3 -c "import sys; sys.path.insert(0,'extensions/e2e/target'); import app"`), чинится правкой в один символ.
+- **Изоляция прогона**: bare-репозиторий + клон (`extensions/e2e/bare.git`,
+  `extensions/e2e/e2e-run`,
   оба в gitignore) — пуши workflow-агентов уходят в bare, реальный origin не
   затрагивается.
 - **Полный сценарий**: скан Jira (PRJ-42 с jenkinsJob) → спека → реализация в
@@ -297,7 +298,7 @@ build-trigger, deploy-trigger) `Skill` внесён в allowlist.
 workflows в клон не входят, клон несёт только моки settings и таргет):
 
 ```
-rm -rf e2e/bare.git e2e/e2e-run && git init --bare -q e2e/bare.git && git push -q e2e/bare.git main:main && git clone -q e2e/bare.git e2e/e2e-run && rm -f e2e/e2e-run/.qwen/tmp/*-mock-state.json 2>/dev/null; cd e2e/e2e-run && QWEN_CODE_ENABLE_WORKFLOWS=1 qwen -y -p "Запусти сохранённый workflow build-autofix из расширения ship-kit: вызови Workflow({ name: 'ship-kit:build-autofix', args: { job: 'calc-app', modelFast: 'glm-5.3-flash', modelExpert: 'glm-5.3-flash' } }) и верни итог."
+rm -rf extensions/e2e/bare.git extensions/e2e/e2e-run && git init --bare -q extensions/e2e/bare.git && git push -q extensions/e2e/bare.git main:main && git clone -q extensions/e2e/bare.git extensions/e2e/e2e-run && rm -f extensions/e2e/e2e-run/.qwen/tmp/*-mock-state.json 2>/dev/null; cd extensions/e2e/e2e-run && QWEN_CODE_ENABLE_WORKFLOWS=1 qwen -y -p "Запусти сохранённый workflow build-autofix из расширения ship-kit: вызови Workflow({ name: 'ship-kit:build-autofix', args: { job: 'calc-app', modelFast: 'glm-5.3-flash', modelExpert: 'glm-5.3-flash' } }) и верни итог."
 ```
 
 `modelFast`/`modelExpert` = `glm-5.3-flash` в тестовых прогонах обязательны (стандарт Oleg):

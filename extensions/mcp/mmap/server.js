@@ -4,7 +4,7 @@ const readline = require('readline');
 
 const SCHEMES = [
   { title: 'Процесс релиза', content: 'сборка (calc-app) → деплой (app-deploy) → передача в тестирование' },
-  { title: 'Схема расчётного модуля', content: 'e2e/target/app.py: add/sub/mul/div; div(x,0) → None по требованию PRJ-42' },
+  { title: 'Схема расчётного модуля', content: 'extensions/e2e/target/app.py: add/sub/mul/div; div(x,0) → None по требованию PRJ-42' },
 ];
 
 const TOOLS = [
