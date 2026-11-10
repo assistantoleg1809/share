@@ -32,13 +32,16 @@ Markdown, плоские строки `ключ: значение` внутри 
 | `repoSsh` | да | ssh-репо для клона (`git@host:team/repo.git`) |
 | `ce` | да | КЭ — конфигурационный элемент: идентификатор объекта для обращений по МСП (например, МСП результатов проверок уязвимостей); передаётся скиллам аргументом |
 | `branchDefault` | нет | Ветка по умолчанию (args сильнее) |
+| `fixFlow` | нет | Как фикс сборки попадает в основную ветку: `direct` (пуш ветки фикса и пересборка, дефолт) или `pr` (фикс → ПР → ожидание апрува человеком → MERGED → пересборка) |
+| `fixRetries` | нет | Максимум кругов правок по замечаниям ПР (дефолт 3) |
+| `runLimit.build` / `runLimit.deploy` | нет | Максимум попыток цикла сборки/деплоя за прогон (дефолты 3/2; args сильнее) |
+| `runBudget` | нет | Бюджет прогона в минутах (по исчерпании — честная остановка STOPPED_BUDGET) |
 | `context` | нет | Что за проект и его особенности (строка) |
 | `errorPolicy.notFixable` | нет | Категории триажа, при которых фикс не запускается (через запятую) |
 | `<alias>.server` | при использовании | Фактический id MCP-сервера в `settings.json → mcpServers`, на который отображается alias |
 | `<alias>.job.path` | для mcp-build / mcp-deploy | Путь до джобы (папки Jenkins) |
 | `<alias>.job.name` | для mcp-build / mcp-deploy | Точное название джобы — идёт скиллу аргументом |
 | `<alias>.projectKey` | для mcp-sonar | Ключ проекта в Sonar |
-| `runLimit.build` / `runLimit.deploy` | нет | Максимум запусков джобы за прогон (регулирование количества запусков; скилл про лимит не знает — соблюдает вызывающий) |
 
 ### Аliases (фиксированы комплектом)
 
@@ -75,6 +78,8 @@ ce: CALC-APP
 branchDefault: main
 context: Калькулятор, EFS-деплой, длинные сборки (~40 мин)
 errorPolicy.notFixable: infra, sonar
+fixFlow: direct
+runBudget: 90
 mcp-build.server: jenkins-conf
 mcp-build.job.path: folder/team
 mcp-build.job.name: calc-app
@@ -95,7 +100,9 @@ jiraKey: BIL
 repoSsh: git@git.corp:team/billing.git
 ce: BILLING-CORE
 branchDefault: develop
-context: Биллинг, деплоя нет, сборка + sonar
+context: Биллинг, деплоя нет, сборка + sonar, защищённая ветка — фиксы через ПР
+fixFlow: pr
+fixRetries: 2
 mcp-build.server: jenkins-corp
 mcp-build.job.path: folder/billing
 mcp-build.job.name: billing-build

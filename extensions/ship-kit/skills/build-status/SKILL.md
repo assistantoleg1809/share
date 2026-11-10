@@ -39,6 +39,8 @@ description: Использовать, когда нужно узнать ста
 4. Терминальные состояния: SUCCESS, FAILURE, UNSTABLE, ABORTED.
 5. При FAILURE/UNSTABLE приложи: первую ошибку компиляции/теста
    (errorSnippet) и последние ~100 строк лога (logTail).
+6. Вызывающий передал «ожидаемую длительность» (из истории джобы) — укажи
+   eta в отчёте; идёт дольше ~2× ожидаемого — поставь possiblyStuck: true.
 
 ## Ограничения
 
@@ -50,7 +52,8 @@ description: Использовать, когда нужно узнать ста
 ## Формат отчёта
 
 state (RUNNING/SUCCESS/FAILURE/UNSTABLE/ABORTED/UNKNOWN), buildNumber, url,
-errorSnippet, logTail.
+errorSnippet, logTail, eta (мин, если передана ожидаемая длительность),
+possiblyStuck (true только при превышении ~2× ожидаемой длительности).
 
 ## Соседние шаги
 
