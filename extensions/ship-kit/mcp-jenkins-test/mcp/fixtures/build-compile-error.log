@@ -1,4 +1,4 @@
-Started by user oleg
+Started by user admin
 Building in workspace /var/lib/jenkins/workspace/calc-app
 [calc-app] $ python3 -m pytest src/tests/ -q
 ============================= ERRORS =============================

@@ -241,7 +241,7 @@ Workflow не может жить вечно (wall-clock, нет таймеро�
 тике закрываются в историю (worktree прибирается), и воркер берёт следующую
 задачу из Jira. Ошибка одной задачи не останавливает воркер.
 
-**Звук-уведомления** (стандарт Oleg): терминальный тик играет системный звук —
+**Звук-уведомления** (стандарт пользователя): терминальный тик играет системный звук —
 `Tink` при `DONE`, `Bottle` при `*_FAILED`/`PR_DECLINED`/`PR_STUCK` (afplay
 через shell-агента; в headless-прогоне тоже срабатывает).
 
@@ -379,7 +379,7 @@ workflows в клон не входят, клон несёт только мок
 rm -rf extensions/ship-kit/e2e/bare.git extensions/ship-kit/e2e/e2e-run && git init --bare -q extensions/ship-kit/e2e/bare.git && git push -q extensions/ship-kit/e2e/bare.git main:main && git clone -q extensions/ship-kit/e2e/bare.git extensions/ship-kit/e2e/e2e-run && rm -f extensions/ship-kit/e2e/e2e-run/.qwen/tmp/*-mock-state.json 2>/dev/null; cd extensions/ship-kit/e2e/e2e-run && QWEN_CODE_ENABLE_WORKFLOWS=1 qwen -y -p "Запусти сохранённый workflow build-autofix из расширения ship-kit: вызови Workflow({ name: 'ship-kit:build-autofix', args: { job: 'calc-app', modelFast: 'glm-5.3-flash', modelExpert: 'glm-5.3-flash' } }) и верни итог."
 ```
 
-`modelFast`/`modelExpert` = `glm-5.3-flash` в тестовых прогонах обязательны (стандарт Oleg):
+`modelFast`/`modelExpert` = `glm-5.3-flash` в тестовых прогонах обязательны (стандарт пользователя):
 без них агенты уходят на дефолт сессии (glm-5.3) и сжигают кредиты подписки —
 урок прогона 13, ~95 дорогих запросов за три прогона.
 

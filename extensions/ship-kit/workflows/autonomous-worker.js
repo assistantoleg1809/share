@@ -158,7 +158,7 @@ const safeWorktree = (p) => (p !== null && p !== undefined && SAFE_WORKTREE.test
 const safeBranch = (b) => (b !== null && b !== undefined && SAFE_BRANCH.test(b) ? b : null);
 
 // Run-журналы вложенных прогонов лежат в каталоге задачи OpenSpec (решение
-// Oleg 2026-11-09): openspec/changes/<тег>/ — тот же тег, что и спека задачи;
+// пользователя 2026-11-09): openspec/changes/<тег>/ — тот же тег, что и спека задачи;
 // specDir ещё неизвестен — каталог по ключу задачи (журналист создаст сам).
 const SAFE_SPEC_DIR = /^[\w][\w./-]*$/;
 const journalDir = (state, key) =>
@@ -555,7 +555,7 @@ if (!/FAILED|ERROR|STUCK|MCP_UNAVAILABLE/.test(report.status)) {
 phase('Result');
 await saveState(state);
 
-// Звук-уведомление по стандарту Oleg: Tink — завершение, Bottle — нужно внимание.
+// Звук-уведомление по стандарту пользователя: Tink — завершение, Bottle — нужно внимание.
 const SOUNDS = {
   DONE: 'Tink.aiff',
   SPEC_FAILED: 'Bottle.aiff',
