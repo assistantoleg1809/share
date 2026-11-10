@@ -14,6 +14,13 @@ e2e-таргет с инжектированным багом), собранны
 обязательные правила любой доработки — скилл
 [skills/adapt-agents-workflows/SKILL.md](../skills/adapt-agents-workflows/SKILL.md).
 
+**Статус (2026-11-10): агенты и workflows заморожены** в текущем виде —
+доработка и создание новых только по явной команде пользователя. Приоритет —
+скиллы (`skills/`): развитие скилл-контура (MCP-alias, md-реестр проектов,
+скилл полного прогона `run`, история выполнения в корне проекта) описано в
+§10; правила доработки скиллов — скилл `adapt-skills`. Замороженные workflows
+работают как есть, их json-реестр не развивается.
+
 Основа: Qwen Code 0.24.6, исследование [qwen-workflows.md](../qwen-workflows.md)
 и [qwen-workflows-dev-guide.md](../qwen-workflows-dev-guide.md); e2e-уроки —
 [mcp-jenkins-test](../mcp-jenkins-test/README.md) и [e2e/e2e-run.md](../e2e/e2e-run.md).
