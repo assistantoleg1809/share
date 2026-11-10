@@ -32,7 +32,8 @@
     командные файлы build.md|deploy.md;
   - `openspec` — контекст (Jira/Confluence/mmap) и оформление изменения
     OpenSpec; реализацию tasks.md делает скилл OpenSpec, если установлен;
-  - `pr` — обвязка контура: ветка task/<КЛЮЧ>, коммиты, PR через
+  - `pr` — обвязка контура: ветка `<X>/<КЛЮЧ>` (дефолты feature/bugfix
+    по типу задачи), коммиты, PR через
     mcp-bitbucket, цикл замечаний (check/fix);
   - `review` — ревью диффа, только чтение;
   - `registry` — единственная точка ведения `ship-kit.projects.md`;
