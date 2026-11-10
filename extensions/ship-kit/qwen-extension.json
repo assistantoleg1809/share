@@ -1,12 +1,12 @@
 {
   "name": "ship-kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": {
-    "ru": "Ship Kit — агенты и workflows конвейера «тикет → прод»",
-    "en": "Ship Kit — ticket-to-prod agents & workflows"
+    "ru": "Ship Kit — скиллы конвейера «тикет → прод» (агенты заморожены)",
+    "en": "Ship Kit — ticket-to-pipeline skills (agents frozen)"
   },
   "description": {
-    "ru": "Универсальный комплект: 11 агентов и 3 workflow для контура «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление» (Jenkins/Jira/Confluence/Sonar/Bitbucket через MCP) + обязательные правила доработки (скилл adapt-agents-workflows).",
-    "en": "Universal kit: 11 agents and 3 workflows for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop (Jenkins/Jira/Confluence/Sonar/Bitbucket via MCP) plus mandatory adaptation rules (adapt-agents-workflows skill)."
+    "ru": "Комплект конвейера «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление». Приоритет — скиллы: 11 ролей на MCP-alias (только MCP из аргументов вызова), md-реестр проектов (ship-kit:projects), полный прогон (ship-kit:run), правила доработки скиллов (adapt-skills). Агенты и workflows заморожены в текущем виде (adapt-agents-workflows).",
+    "en": "Kit for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop. Priority is skills: 11 MCP-alias roles (only MCPs passed via call arguments), md projects registry (ship-kit:projects), full run (ship-kit:run), skill adaptation rules (adapt-skills). Agents and workflows are frozen as-is (adapt-agents-workflows)."
   }
 }
