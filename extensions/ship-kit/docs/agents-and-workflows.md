@@ -523,6 +523,37 @@ possiblyStuck при ~2× ожидаемого). Жёсткое ограниче
 plan.md`) несёт заголовок-состояние (фаза, счётчики, PR, последняя сборка,
 чего ждём, бюджет) — это токен возобновления после обрыва.
 
+Карта фаз прогона (значения «Фазы» из заголовка plan.md; роли, исполняющие
+переход, подписаны на рёбрах):
+
+```mermaid
+stateDiagram-v2
+    [*] --> plan: run «тег задание»
+    plan --> spec: openspec
+    spec --> dev: implementer
+    dev --> pr_wait: PR открыт
+    pr_wait --> dev: замечания ≤ fixRetries
+    pr_wait --> build: MERGED
+    build --> build: build-status RUNNING (eta / possiblyStuck)
+    build --> diagnosis: FAILURE → build-triage
+    diagnosis --> repair: fixable → build-fix
+    diagnosis --> stopped: not-fixable / errorPolicy
+    repair --> build: fixFlow=direct → build-trigger
+    repair --> waiting_approval: fixFlow=pr → implementer (PR из fix-ветки)
+    waiting_approval --> build: MERGED + «продолжи прогон <тег>»
+    waiting_approval --> stopped: DECLINED
+    build --> deploy: SUCCESS + mcp-deploy → deploy-trigger
+    build --> done: SUCCESS, деплоя нет
+    deploy --> done: SUCCESS
+    deploy --> diagnosis: FAILURE → deploy-triage
+    done --> [*]
+    stopped --> [*]
+```
+
+`runBudget` исчерпан — переход в `stopped` возможен из любой фазы.
+Возобновление (`продолжи прогон <тег>`) возвращается в зафиксированную
+фазу без сброса счётчиков попыток.
+
 ### Диспетчер-режим `run`
 
 Вход — «`<тег> <что сделать>`» (напр. «PRJ-123 запусти джобу и исправь
@@ -569,6 +600,13 @@ skill-runs/<тег>/
   Отличие: у Superpowers process-скиллы ссылаются друг на друга как
   «REQUIRED SUB-SKILL», в ship-kit автоматический переход запрещён —
   только человек или `run`.
+- **Разделение труда с OpenSpec**: создание документации изменения и
+  реализация пунктов tasks.md — скиллы OpenSpec (openspec-*), когда они
+  установлены. Скиллы комплекта их не дублируют: `openspec` собирает
+  контекст конвейера (Jira/Confluence/mmap через alias) и оформляет
+  изменение; `implementer` — обвязка контура (ветка `task/<КЛЮЧ>`,
+  атомарные коммиты с ключом Jira, PR через mcp-bitbucket, цикл
+  замечаний, worktree-дисциплина).
 
 ### Правила доработки скиллов
 
