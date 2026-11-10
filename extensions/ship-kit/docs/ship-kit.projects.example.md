@@ -7,7 +7,7 @@ ssh-репо, КЭ, лимиты запусков.
 - **Файл реестра**: `ship-kit.projects.md` в корне проекта, либо центральный
   `~/.qwen/ship-kit/projects.md` (на несколько проектов). Ищутся по цепочке
   в этом порядке, работает первый найденный.
-- **Единственная точка ведения** — скилл `ship-kit:projects`: изменения и
+- **Единственная точка ведения** — скилл `ship-kit:registry`: изменения и
   добавление элементов реестра выполняются только через него.
 - **Скиллы-роли реестр не читают.** Основной агент (или человек) читает
   реестр и передаёт скиллам значения **аргументами вызова**; скилл не знает
@@ -47,12 +47,12 @@ Markdown, плоские строки `ключ: значение` внутри 
 
 | Alias | Роль | Используют скиллы |
 |---|---|---|
-| `mcp-build` | Jenkins-сервер сборки | build-trigger, build-status, build-triage, build-fix |
-| `mcp-deploy` | Jenkins-сервер деплоя | deploy-trigger, deploy-status, deploy-triage, deploy-fix |
-| `mcp-sonar` | Качество/уязвимости (Sonar) | build-triage, build-fix, deploy-triage, deploy-fix |
-| `mcp-jira` | Задачи (Jira) | openspec, implementer, triage, fix |
-| `mcp-confluence` | Документация (Confluence) | openspec, triage, fix |
-| `mcp-bitbucket` | Репозиторий/PR (Bitbucket) | implementer, triage, fix |
+| `mcp-build` | Jenkins-сервер сборки | jobs (kind=build), diagnosis, repair |
+| `mcp-deploy` | Jenkins-сервер деплоя | jobs (kind=deploy), diagnosis, repair |
+| `mcp-sonar` | Качество/уязвимости (Sonar) | diagnosis, repair |
+| `mcp-jira` | Задачи (Jira) | openspec, pr, diagnosis, repair |
+| `mcp-confluence` | Документация (Confluence) | openspec, diagnosis, repair |
+| `mcp-bitbucket` | Репозиторий/PR (Bitbucket) | pr, diagnosis, repair |
 | `mcp-mmap` | Схемы/знания (mmap) | openspec |
 
 Один физический сервер может закрывать несколько alias (например,

@@ -1,12 +1,12 @@
 {
   "name": "ship-kit",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "displayName": {
-    "ru": "Ship Kit — скиллы конвейера «тикет → прод» (агенты заморожены)",
-    "en": "Ship Kit — ticket-to-pipeline skills (agents frozen)"
+    "ru": "Ship Kit — скиллы конвейера «тикет → прод»",
+    "en": "Ship Kit — ticket-to-pipeline skills"
   },
   "description": {
-    "ru": "Комплект конвейера «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление». Приоритет — скиллы: 11 ролей на MCP-alias (только MCP из аргументов вызова), md-реестр проектов (ship-kit:projects), полный прогон (ship-kit:run), правила доработки скиллов (adapt-skills). Агенты и workflows заморожены в текущем виде (adapt-agents-workflows).",
-    "en": "Kit for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop. Priority is skills: 11 MCP-alias roles (only MCPs passed via call arguments), md projects registry (ship-kit:projects), full run (ship-kit:run), skill adaptation rules (adapt-skills). Agents and workflows are frozen as-is (adapt-agents-workflows)."
+    "ru": "9 скиллов конвейера «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление»: run (диспетчер «<тег> <задание>», план skill-runs, циклы до успеха с ожиданием апрува), jobs (запуск/ожидание), diagnosis и repair с командными файлами build|deploy (разные команды — разная эскалация), openspec, pr, review, registry (md-реестр проектов), adapt-kit (правила доработки). Скиллы работают только с MCP из аргументов вызова. Агенты/workflows заморожены и будут удалены.",
+    "en": "9 skills for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop: run (dispatcher \"<tag> <job>\", skill-runs plan, loops until success with approval waiting), jobs (launch/watch), diagnosis and repair with per-team build|deploy files (different teams, different escalation), openspec, pr, review, registry (md projects file), adapt-kit (adaptation rules). Skills use only MCPs passed via call arguments. Agents/workflows frozen and slated for removal."
   }
 }
