@@ -56,7 +56,7 @@ e2e/
 | `diagnosis` | Диагноз падения: категория/fixable/fixHint/knownIssues/confidence; командный файл по kind | mcp-build/mcp-deploy (лог) + mcp-jira, mcp-confluence, mcp-sonar, mcp-bitbucket |
 | `repair` | Минимальная правка по диагнозу, TDD (красный → правка → зелёный), коммит, push в рабочую ветку; командный файл по kind | mcp-build/mcp-deploy (сверка лога) |
 | `openspec` | Контекст конвейера и оформление изменения `openspec/changes/<КЛЮЧ>-<slug>/` | mcp-jira, mcp-confluence, mcp-mmap |
-| `pr` | Обвязка контура: ветка `task/<КЛЮЧ>`, коммиты с ключом Jira, PR, check/fix замечания; реализацию tasks.md делегирует скиллу OpenSpec | mcp-jira, mcp-bitbucket |
+| `pr` | Обвязка контура: ветка `<X>/<КЛЮЧ>` (дефолты feature/bugfix по типу задачи; шаблон — задание/реестр), коммиты с ключом Jira, PR, check/fix замечания; реализацию tasks.md делегирует скиллу OpenSpec | mcp-jira, mcp-bitbucket |
 | `review` | Ревью диффа/ветки, вердикт+находки с файл:строка | — |
 | `registry` | Единственная точка ведения `ship-kit.projects.md` | — |
 | `adapt-kit` | Правила доработки комплекта (точки адаптации, инварианты, критерии) | — |

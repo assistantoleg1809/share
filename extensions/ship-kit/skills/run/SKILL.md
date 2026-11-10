@@ -96,8 +96,10 @@ ETA и флаг possiblyStuck при ~2× ожидаемого.
 
 1. **openspec** — спека по задаче (mcp-jira, при наличии mcp-confluence,
    mcp-mmap). Каталог спеки уже есть — пропусти.
-2. **pr** (режим implement + pr) — ветка, PR (mcp-jira, mcp-bitbucket);
-   реализацию пунктов tasks.md pr делегирует скиллу OpenSpec.
+2. **pr** (режим implement + pr) — ветка по шаблону `<X>/<КЛЮЧ>`
+   (feature/bugfix по типу задачи; переопределяется заданием/реестром), PR
+   (mcp-jira, mcp-bitbucket); реализацию пунктов tasks.md pr делегирует
+   скиллу OpenSpec.
 3. **PR-цикл** — pr в режимах check/fix: замечания → правки → пуш →
    resolve, максимум `fixRetries` кругов (дефолт 3; args сильнее реестра).
    MERGED — дальше; DECLINED/застрял — задача в issues.md, стоп.
