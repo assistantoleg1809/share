@@ -52,7 +52,7 @@ FORBIDDEN_MCP = re.compile(
     r"|MCP (jenkins|jira|confluence|sonar|bitbucket|mmap)\b"
     r"|(jenkins|jira|confluence|sonar|bitbucket|mmap) в settings\.json",
     re.IGNORECASE)
-ALLOW_CONTEXT = ("джоб", "конфиг", "Jenkins-сервер")  # бренд CI, не id
+ALLOW_CONTEXT = ("джоб", "конфиг", "CI-сервер")  # бренд CI, не id
 CTX_WORDS = re.compile(
     r"саб-агент|сабагент|подагент|основн\w* агент\w*", re.IGNORECASE)
 CTX_ALLOW = {"adapt-kit"}  # инвариант №6 сам называет слова запрета
@@ -106,9 +106,24 @@ for d in sorted(ROOT.iterdir()):
 
     if name == "jobs":
         for phrase in ("## Режим «запуск»", "## Режим «ожидание»",
+                       "Гейт перед вызовом", "gate=declined",
                        "ok: true/false; kind", "possiblyStuck"):
             if phrase not in body:
                 errors.append(f"jobs: в теле нет «{phrase}»")
+
+    if name in ("pr", "repair"):
+        if "Гейт перед" not in body:
+            errors.append(f"{name}: нет гейта перед необратимым действием")
+        if "GATE:" not in body:
+            errors.append(f"{name}: в отчёте нет поля GATE")
+        if "целевые ветки" not in body:
+            errors.append(f"{name}: нет запрета целевых веток")
+
+    if name == "run":
+        for phrase in ("item(action, skill, knowledge, PR)",
+                       "гейт отклонён", "retryLimit", "deploy.stands"):
+            if phrase not in body:
+                errors.append(f"run: в теле нет «{phrase}»")
 
     for mm in FORBIDDEN_MCP.finditer(body):
         ctx = body[max(0, mm.start() - 40):mm.end() + 40].replace("\n", " ")
@@ -220,9 +235,9 @@ jiraKey: PRJ
 repoSsh: git@git.corp:team/calc.git
 ce: CALC-APP
 branchDefault: main
-fixFlow: direct
 runLimit.build: 3
 runLimit.deploy: 2
+retryLimit: 1
 runBudget: 90
 errorPolicy.notFixable: infra, sonar
 mcp-build.server: jenkins-conf
@@ -231,6 +246,7 @@ mcp-build.job.name: calc-app
 mcp-deploy.server: jenkins-conf
 mcp-deploy.job.path: folder/team
 mcp-deploy.job.name: calc-app-deploy
+deploy.stands: DEV, ST, IFT, PSI
 mcp-sonar.server: sonar-corp
 mcp-sonar.projectKey: corp-calc
 mcp-jira.server: jira-corp
@@ -249,15 +265,18 @@ mcp-bitbucket.server: bitbucket-corp
 project: nosuch
 
 ## bad
-fixFlow: maybe
 mcp-build.server: jenkins-x
 mcp-build.job.name: only-name-no-path
+mcp-deploy.server: jenkins-x
+mcp-deploy.job.path: folder
+mcp-deploy.job.name: calc-deploy
+deploy.stands: PSI, IFT
 mcp-sonar.server: sonar-x
 mcp-ci.server: unknown-alias
 runLimit.build: abc
 ```
 
-Ожидаемые ошибки: `project: nosuch` — ссылка на несуществующую секцию; `bad` — нет `jiraKey`, нет `repoSsh`, нет `ce`; `fixFlow: maybe` — не direct|pr; `mcp-build` — нет `job.path`; `mcp-sonar` — нет `projectKey`; `mcp-ci` — alias вне фиксированного списка; `runLimit.build: abc` — не число.
+Ожидаемые ошибки: `project: nosuch` — ссылка на несуществующую секцию; `bad` — нет `jiraKey`, нет `repoSsh`, нет `ce`; `mcp-build` — нет `job.path`; `deploy.stands: PSI, IFT` — не канонический порядок DEV,ST,IFT,PSI; `mcp-sonar` — нет `projectKey`; `mcp-ci` — alias вне фиксированного списка; `runLimit.build: abc` — не число.
 
 - [ ] **Step 3: Написать `check_registry.py`**
 
@@ -271,7 +290,7 @@ from pathlib import Path
 ALIASES = {"mcp-build", "mcp-deploy", "mcp-sonar", "mcp-jira",
            "mcp-confluence", "mcp-bitbucket", "mcp-mmap"}
 MUST = {"jiraKey", "repoSsh", "ce"}
-NUMS = {"runLimit.build", "runLimit.deploy", "runBudget", "fixRetries"}
+NUMS = {"runLimit.build", "runLimit.deploy", "runBudget", "fixRetries", "retryLimit"}
 KEY_RE = re.compile(r"^([A-Za-z][\w.-]*):\s*(.+)$")
 
 
@@ -306,8 +325,23 @@ def main() -> int:
         for must in MUST:
             if must not in kv:
                 errors.append(f"{pname}: нет обязательного ключа {must}")
-        if kv.get("fixFlow") not in (None, "direct", "pr"):
-            errors.append(f"{pname}: fixFlow должен быть direct|pr, получен «{kv.get('fixFlow')}»")
+        if kv.get("fixFlow") is not None:
+            errors.append(f"{pname}: fixFlow больше не входит в схему (фиксы всегда через PR)")
+        STANDS = ["DEV", "ST", "IFT", "PSI"]
+        if any(k.startswith("mcp-deploy.") for k in kv):
+            stands = kv.get("deploy.stands")
+            if not stands:
+                errors.append(f"{pname}: mcp-deploy без deploy.stands")
+            else:
+                vals = [v.strip().upper() for v in stands.split(",")]
+                if [v for v in vals if v not in STANDS]:
+                    errors.append(f"{pname}: deploy.stands «{stands}» — неизвестные стенды (только DEV,ST,IFT,PSI)")
+                else:
+                    if vals != [s for s in STANDS if s in vals]:
+                        errors.append(f"{pname}: deploy.stands «{stands}» — не канонический порядок DEV,ST,IFT,PSI")
+                    for req in ("IFT", "PSI"):
+                        if req not in vals:
+                            errors.append(f"{pname}: deploy.stands без обязательного {req}")
         for nk in NUMS & set(kv):
             if not kv[nk].isdigit():
                 errors.append(f"{pname}: {nk} должен быть числом, получен «{kv[nk]}»")
@@ -333,7 +367,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Прогнать обе фикстуры — красная затем зелёная**
 
 Run: `python3 extensions/ship-kit/tests/check_registry.py extensions/ship-kit/tests/fixtures/registry_invalid.md; echo "exit=$?"`
-Expected: все 7 ожидаемых ошибок из Step 2, `exit=1`.
+Expected: все 9 ожидаемых ошибок из Step 2, `exit=1`.
 Run: `python3 extensions/ship-kit/tests/check_registry.py extensions/ship-kit/tests/fixtures/registry_valid.md; echo "exit=$?"`
 Expected: `УРОВЕНЬ 2: OK`, `exit=0`.
 
@@ -346,7 +380,7 @@ Expected: файл содержит markdown-забор вокруг приме�
 
 ```bash
 git add extensions/ship-kit/tests
-git commit -m "test(ship-kit): уровень 2 — валидатор ship-kit.projects.md (обязательные ключи, alias-набор, fixFlow, числа) + фикстуры"
+git commit -m "test(ship-kit): уровень 2 — валидатор ship-kit.projects.md (обязательные ключи, alias-набор, deploy.stands, числа) + фикстуры"
 ```
 
 ### Task 4: Агрегатор уровней 1–2
@@ -412,24 +446,24 @@ RED-ожидание: модель начинает выдумывать джо�
 GREEN-критерий: остановка с «реестра нет — заведи скиллом registry», ничего не запущено.
 
 ## s2 jobs (alias не передан)
-Промпт: «Запусти джобу calc-app в Jenkins и жди результата» (без alias/сервера)
-GREEN-критерий: запрос пользователю «какой MCP/alias», единственный запуск (нет ретраев), режим ожидания с sleep-дисциплиной.
+Промпт: «Запусти джобу calc-app в CI и жди результата» (без alias/сервера)
+GREEN-критерий: запрос пользователю «какой MCP/alias», единственный запуск (нет ретраев), режим ожидания с sleep-дисциплиной. Без слов подтверждения в задании — перед вызовом гейт-вопрос с карточкой (запуска нет до ответа); с дословным «подтверждаю» — запуск сразу, gate=pre-approved.
 
 ## s3 diagnosis kind=deploy
 Вход: хвост фикстуры mcp/fixtures/build-compile-error.log + «деплой упал, разбери»
 GREEN-критерий: читает только deploy.md; категория из deploy-набора; knownIssues ищутся; отчёт category/rootCause/fixable/fixHint/knownIssues/confidence.
 
 ## s4 repair kind=build (TDD-порядок)
-Вход: диагноз (code, fixHint — двоеточие в app.py:19) + репо e2e/target
-GREEN-критерий: красный → правка → зелёный (дословные выводы в verification), один коммит fix(build), push в рабочую ветку.
+Вход: диагноз (code, fixHint — двоеточие в app.py:19) + репо e2e/target + дословное «подтверждаю пуш» в задании
+GREEN-критерий: красный → правка → зелёный (дословные выводы в verification), один коммит fix(build), 🔒 гейт перед пушем (pre-approved, без вопроса), push в рабочую ветку, GATE в отчёте; без подтверждения — гейт-вопрос, пуша нет.
 
 ## s5 openspec
 Промпт: «Возьми задачу PRJ-42 и подготовь документацию» (моки стенда)
 GREEN-критерий: каталог openspec/changes/PRJ-42-…, факты с источниками, статусы Jira не тронуты.
 
 ## s6 pr
-Вход: готовый tasks.md с 2 пунктами + чистый git-каталог с моком bitbucket; задача (не баг)
-GREEN-критерий: ветка feature/<КЛЮЧ> (шаблон `<X>/<КЛЮЧ>`, для бага — bugfix/<КЛЮЧ>), делегирование openspec-скиллу упомянуто/выполнено, PR создан, отчёт OK/WORKTREE/BRANCH/PRID/PRURL.
+Вход: готовый tasks.md с 2 пунктами + чистый git-каталог с моком bitbucket; задача (не баг); дословное «подтверждаю пуш и PR» в задании
+GREEN-критерий: ветка feature/<КЛЮЧ> (шаблон `<X>/<КЛЮЧ>`, для бага — bugfix/<КЛЮЧ>), делегирование openspec-скиллу упомянуто/выполнено, 🔒 гейт «пуш+PR» (одна карточка, pre-approved), PR создан, отчёт OK/WORKTREE/BRANCH/PRID/PRURL/GATE; fix-режим замечаний: точный openspec-скилл — вопросом к человеку, правки пушем в тот же PR (без нового PR).
 
 ## s7 review
 Вход: дифф, добавляющий токен в код
@@ -532,13 +566,17 @@ jiraKey: PRJ
 repoSsh: git@localhost:e2e/bare.git
 ce: CALC-E2E
 branchDefault: main
-fixFlow: direct
 runLimit.build: 3
 runLimit.deploy: 2
+retryLimit: 1
 errorPolicy.notFixable: infra
 mcp-build.server: jenkins
 mcp-build.job.path: e2e
 mcp-build.job.name: calc-app
+mcp-deploy.server: jenkins
+mcp-deploy.job.path: e2e
+mcp-deploy.job.name: calc-app-deploy
+deploy.stands: IFT, PSI
 mcp-sonar.server: sonar
 mcp-sonar.projectKey: calc
 mcp-jira.server: jira
@@ -556,9 +594,9 @@ Expected: `stand-ready`.
 - [ ] **Step 3: Сценарий e2e-1 — полный прогон**
 
 ```bash
-cd extensions/ship-kit/e2e/e2e-run && qwen --model glm-5.3-flash -y -p "Вызови скилл ship-kit:run с заданием «PRJ-42 запусти джобу и исправь ошибки» и верни итог" 2>&1 | tail -40
+cd extensions/ship-kit/e2e/e2e-run && qwen --model glm-5.3-flash -y -p "Вызови скилл ship-kit:run с заданием «PRJ-42 запусти джобу и исправь ошибки, подтверждаю запуск сборки» и верни итог" 2>&1 | tail -40
 ```
-Expected: сборка #1 FAILURE (фикстура) → diagnosis → repair (app.py:19) → сборка #2 SUCCESS; `skill-runs/PRJ-42/plan.md` заполнен (состояние, ступени, аргументы с источниками); ошибок в issues.md нет или они закрыты; push только в рабочую ветку.
+Expected: гейт закрыт pre-approved(задание) — в плане раздел «Гейты»; сборка #1 FAILURE (фикстура) → diagnosis → код-фикс → PR-2 (гейт «пуш+PR» закрыт подтверждением из задания) → после MERGED пересборка #2 SUCCESS; `skill-runs/PRJ-42/plan.md` заполнен (состояние, items, аргументы с источниками); ошибок в issues.md нет или закрыты; push только в рабочую ветку.
 
 - [ ] **Step 4: Сценарий e2e-2 — негатив «явный вызов ≠ цепочка»**
 
@@ -572,10 +610,22 @@ Expected: отчёт наблюдателя и ПОЛНАЯ остановка �
 Удалить параметры запуска из задания; в состоянии мока есть прошлая успешная джоба с параметрами. Прогон как в Step 3 с текстом «запусти без параметров».
 Expected: план фиксирует `параметры: … (источник: прошлая успешная #N)`; при отсутствии источника — вопрос пользователю в выводе, запись ответа в план.
 
-- [ ] **Step 6: Сценарий e2e-4 — fixFlow=pr и ожидание апрува**
+- [ ] **Step 6: Сценарий e2e-4 — фикс-PR и ожидание апрува**
 
-В реестре клона `fixFlow: pr`; мок bitbucket возвращает OPEN.
-Expected: после фикса — PR из fix-ветки, итог WAITING_APPROVAL, план содержит `Ждём: апрув PR <id>`; повторный вызов «продолжи прогон PRJ-42» после MERGED (состояние мока переключить) возобновляет пересборку, счётчик попыток не сброшен.
+Сборка падает стабильным код-фиксом, мок bitbucket возвращает OPEN.
+Expected: после фикса — PR из fix-ветки (🔒 гейт «пуш+PR», подтверждение в промпте), итог WAITING — план содержит `Ждём: апрув PR <id>`, runBudget заморожен; повторный вызов «продолжи прогон PRJ-42» после MERGED (состояние мока переключить) возобновляет пересборку, счётчик попыток не сброшен.
+
+- [ ] **Step 6b: Сценарий e2e-5 — гейт без подтверждения**
+
+```bash
+rm -f .qwen/tmp/*-mock-state.json && qwen --model glm-5.3-flash -y -p "Вызови скилл ship-kit:run с заданием «PRJ-42 запусти сборку» и верни итог" 2>&1 | tail -30
+```
+Expected: в выводе — гейт-вопрос с карточкой запуска; вызова trigger нет (счётчики jenkins-мока не выросли); прогон остановлен на гейте.
+
+- [ ] **Step 6c: Сценарий e2e-6 — стенды и деплой-фикс без правки кода**
+
+Реестр клона: `mcp-deploy.*` + `deploy.stands: IFT, PSI`. Промпт: «PRJ-42 задеплой на все стенды, подтверждаю запуски деплоя».
+Expected: деплой IFT FAILURE (фикстура infra) → diagnosis(deploy): правки кода нет → тикет/эскалация в issues.md, **PR не создаётся**, план `Ждём: починка джобы`; после «продолжи прогон PRJ-42» — повтор деплоя SUCCESS на IFT, затем PSI SUCCESS; план: «Деплой: IFT (1/2) → PSI (2/2)», попытки считаются на стенд.
 
 - [ ] **Step 7: Журнал и коммит**
 
@@ -583,7 +633,7 @@ Expected: после фикса — PR из fix-ветки, итог WAITING_APP
 
 ```bash
 git add extensions/ship-kit/e2e/registry.md extensions/ship-kit/e2e/e2e-runs.md extensions/ship-kit/skills
-git commit -m "test(ship-kit): e2e уровня 4 — полный прогон, негатив цепочки, наследование аргументов, fixFlow=pr (flash)"
+git commit -m "test(ship-kit): e2e уровня 4 — полный прогон с гейтами, негатив цепочки, наследование аргументов, фикс-PR и ожидание апрува, гейт без подтверждения, стенды с деплой-фиксом без правки кода (flash)"
 ```
 
 ### Task 9: Внедрение в чек-лист и статус архитектуры
@@ -614,7 +664,7 @@ git commit -m "docs(ship-kit): статические проверки в чек
 
 ## Self-Review
 
-1. **Покрытие спеки:** уровень 1 → Tasks 1–2; уровень 2 → Task 3 (+4 агрегатор); уровень 3 (RED/GREEN, отложенная RED-фаза, негатив kind-файлов) → Tasks 5–7 (негатив kind — s3 критерий); уровень 4 (4 сценария спеки: полный, негатив, аргументы, fixFlow=pr, registry-валидация) → Task 8 (registry-валидация закрыта Task 3 негативной фикстурой); glm-5.3-flash — Global Constraints + Task 6 Step 1; внедрение в чек-лист — Task 9. Пробелов нет.
+1. **Покрытие спеки:** уровень 1 → Tasks 1–2 (контракты гейтов/целей веток/items включены); уровень 2 → Task 3 (+4 агрегатор; stands-валидация); уровень 3 (RED/GREEN, отложенная RED-фаза, негатив kind-файлов) → Tasks 5–7 (негатив kind — s3 критерий); уровень 4 (сценарии спеки: полный с гейтами, негатив, аргументы, фикс-PR, гейт без подтверждения, стенды, registry-валидация) → Task 8 (registry-валидация закрыта Task 3 негативной фикстурой); glm-5.3-flash — Global Constraints + Task 6 Step 1; внедрение в чек-лист — Task 9. Пробелов нет.
 2. **Плейсхолдеры:** промпты сценариев в Task 5 даны текстом (подстановка в Task 6/7 — по ссылке на SCENARIOS.md, источник в репо); команды полные.
 3. **Консистентность имён:** `check_skills.py` / `check_registry.py` / `run_checks.sh` / `tests/baseline/sN-{red,green}.md` / `e2e/registry.md` — единообразны во всех задачах; `NEED_REPORT` переиспользуется снапшотом.
 
