@@ -58,11 +58,6 @@ settings.json → mcpServers), и остановись до ответа; не �
 6. Стенд: передан аргумент stand — включи его в параметры запуска и укажи
    в отчёте.
 
-Отчёт режима: ok (true/false); kind (build/deploy); stand (если передан);
-number; url; gate (confirmed | pre-approved(источник) |
-inherited(причина) | declined); error (при ok=false — дословно что вернул
-инструмент).
-
 ## Режим «ожидание»
 
 1. Узнай статус (номер или последний по джобе и ветке).
@@ -76,10 +71,17 @@ inherited(причина) | declined); error (при ok=false — дословн
 6. Вызывающий передал «ожидаемую длительность» (из истории джобы) — укажи
    eta в отчёте; идёт дольше ~2× ожидаемого — поставь possiblyStuck: true.
 
-Отчёт режима: state (RUNNING/SUCCESS/FAILURE/UNSTABLE/ABORTED/UNKNOWN);
-kind (build/deploy); stand (если передан); number; url; errorSnippet;
-logTail; eta (мин, если передана ожидаемая длительность); possiblyStuck.
-Ожидание — чтение, без гейта.
+## Формат отчёта
+
+Запуск: ok: true/false; kind (build/deploy); stand (если передан);
+number; url; gate: confirmed | pre-approved(источник) |
+inherited(причина) | declined; error (при ok=false — дословно что вернул
+инструмент).
+
+Ожидание: state (RUNNING/SUCCESS/FAILURE/UNSTABLE/ABORTED/UNKNOWN); kind
+(build/deploy); stand (если передан); number; url; errorSnippet; logTail;
+eta (мин, если передана ожидаемая длительность); possiblyStuck. Ожидание
+— чтение, без гейта.
 
 ## Ограничения
 

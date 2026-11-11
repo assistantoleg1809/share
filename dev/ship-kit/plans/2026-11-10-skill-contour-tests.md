@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Реализовать 4 уровня тестов скилл-контура (9 скиллов): статические контракты, валидатор md-реестра, baseline RED/GREEN скиллов, e2e на стенде — и внедрить статические проверки в чек-лист коммита.
+**Goal:** Реализовать 4 уровня тестов скилл-контура (8 скиллов): статические контракты, валидатор md-реестра, baseline RED/GREEN скиллов, e2e на стенде — и внедрить статические проверки в чек-лист коммита.
 
 **Architecture:** Уровни 1–2 — детерминированные python3-скрипты без зависимостей в `dev/ship-kit/tests/`, гоняются локально за секунды. Уровень 3 — writing-skills TDD для скиллов: один и тот же сценарий давления гоняется «без скилла» (расширение снесено) и «со скиллом», дословные выводы — в `dev/ship-kit/tests/baseline/`. Уровень 4 — существующий стенд (моки `dev/ship-kit/e2e/mcp/`, таргет, bare+клон) плюс md-реестр стенда; прогон — headless qwen.
 
@@ -40,7 +40,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2] / "extensions" / "ship-kit" / "skills"
+ROOT = Path(__file__).resolve().parents[3] / "extensions" / "ship-kit" / "skills"
 EXPECTED = ["adapt-kit", "diagnosis", "jobs", "openspec", "pr",
             "registry", "repair", "run"]
 NEED_STEP0 = {"run", "jobs", "diagnosis", "repair", "openspec", "pr"}
@@ -150,7 +150,7 @@ Expected: либо `УРОВЕНЬ 1: OK`, либо конкретный спи�
 
 ```bash
 git add dev/ship-kit/tests/check_skills.py extensions/ship-kit/skills
-git commit -m "test(ship-kit): уровень 1 — статические контракты 9 скиллов (frontmatter, состав, alias-чистота, kind-файлы, секции)"
+git commit -m "test(ship-kit): уровень 1 — статические контракты 8 скиллов (frontmatter, состав, alias-чистота, kind-файлы, секции)"
 ```
 
 ### Task 2: Golden-снимок форматов отчётов
