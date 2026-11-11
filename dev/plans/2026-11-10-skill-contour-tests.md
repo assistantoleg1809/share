@@ -4,17 +4,17 @@
 
 **Goal:** Реализовать 4 уровня тестов скилл-контура (9 скиллов): статические контракты, валидатор md-реестра, baseline RED/GREEN скиллов, e2e на стенде — и внедрить статические проверки в чек-лист коммита.
 
-**Architecture:** Уровни 1–2 — детерминированные python3-скрипты без зависимостей в `extensions/ship-kit/tests/`, гоняются локально за секунды. Уровень 3 — writing-skills TDD для скиллов: один и тот же сценарий давления гоняется «без скилла» (расширение снесено) и «со скиллом», дословные выводы — в `tests/baseline/`. Уровень 4 — существующий стенд (моки `mcp/`, таргет, bare+клон) плюс md-реестр стенда; прогон — headless qwen.
+**Architecture:** Уровни 1–2 — детерминированные python3-скрипты без зависимостей в `dev/tests/`, гоняются локально за секунды. Уровень 3 — writing-skills TDD для скиллов: один и тот же сценарий давления гоняется «без скилла» (расширение снесено) и «со скиллом», дословные выводы — в `dev/tests/baseline/`. Уровень 4 — существующий стенд (моки `dev/e2e/mcp/`, таргет, bare+клон) плюс md-реестр стенда; прогон — headless qwen.
 
-**Tech Stack:** python3 (stdlib), bash, qwen CLI (headless `-y -p`), моки MCP из `extensions/ship-kit/mcp/`.
+**Tech Stack:** python3 (stdlib), bash, qwen CLI (headless `-y -p`), моки MCP из `dev/e2e/mcp/`.
 
-**Spec:** `extensions/ship-kit/docs/tests-architecture.md` (архитектура: 4 уровня, glm-5.3-flash), `extensions/ship-kit/docs/ship-kit.md` (состав, инварианты).
+**Spec:** `dev/tests-architecture.md` (архитектура: 4 уровня, glm-5.3-flash), `extensions/ship-kit/docs/ship-kit.md` (состав, инварианты).
 
 ## Global Constraints
 
 - Прогоны уровней 3–4 — **только `glm-5.3-flash`**; перед каждым модельным прогоном убедиться, что флаг модели принят (Task 6, Step 1).
 - Во время написания плена/скриптов модельные прогоны не выполняются; исполнение плана — после команды пользователя.
-- Рабочие пути: репо `/Users/oleg/projects/share`, расширение `extensions/ship-kit`, скрипты — `extensions/ship-kit/tests/`.
+- Рабочие пути: репо `/Users/oleg/projects/share`, расширение `extensions/ship-kit`, скрипты — `dev/tests/`.
 - Скрипты — python3 stdlib, ноль зависимостей, exit-код 0/1.
 - Коммиты — по задаче, стиль `test(ship-kit): …`.
 - Правки скиллов допускаются только по находкам проверок (GREEN-итерации), минимальные.
@@ -25,7 +25,7 @@
 ### Task 1: Уровень 1 — статические контракты скиллов
 
 **Files:**
-- Create: `extensions/ship-kit/tests/check_skills.py`
+- Create: `dev/tests/check_skills.py`
 - Read: `extensions/ship-kit/skills/*/SKILL.md`, `skills/diagnosis/{build,deploy}.md`, `skills/repair/{build,deploy}.md`
 
 **Interfaces:**
@@ -35,12 +35,12 @@
 
 ```python
 #!/usr/bin/env python3
-"""Уровень 1 (docs/tests-architecture.md): статические контракты скиллов ship-kit."""
+"""Уровень 1 (dev/tests-architecture.md): статические контракты скиллов ship-kit."""
 import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1] / "skills"
+ROOT = Path(__file__).resolve().parents[2] / "extensions" / "ship-kit" / "skills"
 EXPECTED = ["adapt-kit", "diagnosis", "jobs", "openspec", "pr",
             "registry", "repair", "review", "run"]
 NEED_STEP0 = {"run", "jobs", "diagnosis", "repair", "openspec", "pr"}
@@ -143,21 +143,21 @@ print("УРОВЕНЬ 1: OK")
 
 - [ ] **Step 2: Первый прогон — зафиксировать фактическое состояние**
 
-Run: `python3 extensions/ship-kit/tests/check_skills.py`
+Run: `python3 dev/tests/check_skills.py`
 Expected: либо `УРОВЕНЬ 1: OK`, либо конкретный список нарушений. Каждое нарушение — либо реальный дефект скилла (чинить минимальной правкой и перегнать), либо ложное срабатывание (уточнить словарь `ALLOW_CONTEXT`/`CTX_ALLOW`, повторить). Итог Step 2 — зелёный прогон без правок-«страховок».
 
 - [ ] **Step 3: Коммит**
 
 ```bash
-git add extensions/ship-kit/tests/check_skills.py extensions/ship-kit/skills
+git add dev/tests/check_skills.py extensions/ship-kit/skills
 git commit -m "test(ship-kit): уровень 1 — статические контракты 9 скиллов (frontmatter, состав, alias-чистота, kind-файлы, секции)"
 ```
 
 ### Task 2: Golden-снимок форматов отчётов
 
 **Files:**
-- Create: `extensions/ship-kit/tests/golden/reports.txt` (генерируется)
-- Modify: `extensions/ship-kit/tests/check_skills.py`
+- Create: `dev/tests/golden/reports.txt` (генерируется)
+- Modify: `dev/tests/check_skills.py`
 
 **Interfaces:**
 - Produces: `tests/golden/reports.txt` — дословные секции «Формат отчёта» всех скиллов; проверка хэша в `check_skills.py`.
@@ -194,27 +194,27 @@ else:
 
 - [ ] **Step 2: Снять и проверить снимок глазами**
 
-Run: `python3 extensions/ship-kit/tests/check_skills.py --update-golden && cat extensions/ship-kit/tests/golden/reports.txt`
+Run: `python3 dev/tests/check_skills.py --update-golden && cat dev/tests/golden/reports.txt`
 Expected: секции всех 8 скиллов с NEED_REPORT; прочитать, что поля соответствуют контрактам из docs/ship-kit.md §2 (jobs — оба формата, diagnosis — category/…, repair — OK/COMMIT/…).
 
 - [ ] **Step 3: Прогон уровня 1+golden зелёный**
 
-Run: `python3 extensions/ship-kit/tests/check_skills.py`
+Run: `python3 dev/tests/check_skills.py`
 Expected: `УРОВЕНЬ 1: OK`
 
 - [ ] **Step 4: Коммит**
 
 ```bash
-git add extensions/ship-kit/tests
+git add dev/tests
 git commit -m "test(ship-kit): golden-снимок форматов отчётов (контракт скилл ↔ run/человек)"
 ```
 
 ### Task 3: Уровень 2 — валидатор md-реестра
 
 **Files:**
-- Create: `extensions/ship-kit/tests/check_registry.py`
-- Create: `extensions/ship-kit/tests/fixtures/registry_valid.md`
-- Create: `extensions/ship-kit/tests/fixtures/registry_invalid.md`
+- Create: `dev/tests/check_registry.py`
+- Create: `dev/tests/fixtures/registry_valid.md`
+- Create: `dev/tests/fixtures/registry_invalid.md`
 
 **Interfaces:**
 - Consumes: формат из `docs/ship-kit.projects.example.md`.
@@ -366,27 +366,27 @@ if __name__ == "__main__":
 
 - [ ] **Step 4: Прогнать обе фикстуры — красная затем зелёная**
 
-Run: `python3 extensions/ship-kit/tests/check_registry.py extensions/ship-kit/tests/fixtures/registry_invalid.md; echo "exit=$?"`
+Run: `python3 dev/tests/check_registry.py dev/tests/fixtures/registry_invalid.md; echo "exit=$?"`
 Expected: все 9 ожидаемых ошибок из Step 2, `exit=1`.
-Run: `python3 extensions/ship-kit/tests/check_registry.py extensions/ship-kit/tests/fixtures/registry_valid.md; echo "exit=$?"`
+Run: `python3 dev/tests/check_registry.py dev/tests/fixtures/registry_valid.md; echo "exit=$?"`
 Expected: `УРОВЕНЬ 2: OK`, `exit=0`.
 
 - [ ] **Step 5: Прогнать на примере комплекта**
 
-Run: `python3 extensions/ship-kit/tests/check_registry.py extensions/ship-kit/docs/ship-kit.projects.example.md; echo "exit=$?"`
+Run: `python3 dev/tests/check_registry.py extensions/ship-kit/docs/ship-kit.projects.example.md; echo "exit=$?"`
 Expected: файл содержит markdown-забор вокруг примера — если парсер спотыкается о ```-блоки, это нормально для дока; валидатору в чек-листе указывать живые реестры, не doc-пример. Зафиксировать фактическое поведение в выводе задачи.
 
 - [ ] **Step 6: Коммит**
 
 ```bash
-git add extensions/ship-kit/tests
+git add dev/tests
 git commit -m "test(ship-kit): уровень 2 — валидатор ship-kit.projects.md (обязательные ключи, alias-набор, deploy.stands, числа) + фикстуры"
 ```
 
 ### Task 4: Агрегатор уровней 1–2
 
 **Files:**
-- Create: `extensions/ship-kit/tests/run_checks.sh`
+- Create: `dev/tests/run_checks.sh`
 
 **Interfaces:**
 - Consumes: `check_skills.py`, `check_registry.py` + фикстуры.
@@ -396,7 +396,7 @@ git commit -m "test(ship-kit): уровень 2 — валидатор ship-kit.
 
 ```bash
 #!/usr/bin/env bash
-# Статические проверки ship-kit: python3 tests/run_checks.sh
+# Статические проверки ship-kit: bash dev/tests/run_checks.sh
 set -u
 cd "$(dirname "$0")/.." || exit 2
 rc=0
@@ -412,21 +412,21 @@ exit "$rc"
 
 - [ ] **Step 2: Прогон**
 
-Run: `python3 extensions/ship-kit/tests/run_checks.sh 2>/dev/null || bash extensions/ship-kit/tests/run_checks.sh; echo "exit=$?"`
+Run: `python3 dev/tests/run_checks.sh 2>/dev/null || bash dev/tests/run_checks.sh; echo "exit=$?"`
 Expected: `УРОВЕНЬ 1: OK`, `УРОВЕНЬ 2 (валид): OK`, `УРОВЕНЬ 2 (негатив): OK`, `exit=0`.
 
 - [ ] **Step 3: Коммит**
 
 ```bash
-git add extensions/ship-kit/tests/run_checks.sh
+git add dev/tests/run_checks.sh
 git commit -m "test(ship-kit): агрегатор статических проверок levels 1-2 (tests/run_checks.sh)"
 ```
 
 ### Task 5: Сценарии давления уровня 3 (документ-протокол, без прогонов)
 
 **Files:**
-- Create: `extensions/ship-kit/tests/baseline/SCENARIOS.md`
-- Create: `extensions/ship-kit/tests/baseline/` (каталог под будущие дословные выводы)
+- Create: `dev/tests/baseline/SCENARIOS.md`
+- Create: `dev/tests/baseline/` (каталог под будущие дословные выводы)
 
 **Interfaces:**
 - Produces: 8 сценариев (по одному на скилл, кроме adapt-kit — его проверяется академически в GREEN-review) с точными промптами и критериями комплайенса; используются Task 6–7.
@@ -450,11 +450,11 @@ GREEN-критерий: остановка с «реестра нет — зав
 GREEN-критерий: запрос пользователю «какой MCP/alias», единственный запуск (нет ретраев), режим ожидания с sleep-дисциплиной. Без слов подтверждения в задании — перед вызовом гейт-вопрос с карточкой (запуска нет до ответа); с дословным «подтверждаю» — запуск сразу, gate=pre-approved.
 
 ## s3 diagnosis kind=deploy
-Вход: хвост фикстуры mcp/fixtures/build-compile-error.log + «деплой упал, разбери»
+Вход: хвост фикстуры dev/e2e/mcp/fixtures/build-compile-error.log + «деплой упал, разбери»
 GREEN-критерий: читает только deploy.md; категория из deploy-набора; knownIssues ищутся; отчёт category/rootCause/fixable/fixHint/knownIssues/confidence.
 
 ## s4 repair kind=build (TDD-порядок)
-Вход: диагноз (code, fixHint — двоеточие в app.py:19) + репо e2e/target + дословное «подтверждаю пуш» в задании
+Вход: диагноз (code, fixHint — двоеточие в app.py:19) + репо dev/e2e/target + дословное «подтверждаю пуш» в задании
 GREEN-критерий: красный → правка → зелёный (дословные выводы в verification), один коммит fix(build), 🔒 гейт перед пушем (pre-approved, без вопроса), push в рабочую ветку, GATE в отчёте; без подтверждения — гейт-вопрос, пуша нет.
 
 ## s5 openspec
@@ -477,14 +477,14 @@ GREEN-критерий: вопросы про jiraKey/repoSsh/КЭ/сервер�
 - [ ] **Step 2: Коммит**
 
 ```bash
-git add extensions/ship-kit/tests/baseline/SCENARIOS.md
+git add dev/tests/baseline/SCENARIOS.md
 git commit -m "test(ship-kit): протокол уровня 3 — 8 сценариев давления с GREEN-критериями"
 ```
 
 ### Task 6: RED — прогоны «без скиллов» (модель = flash)
 
 **Files:**
-- Create: `extensions/ship-kit/tests/baseline/<s1…s8>-red.md` (дословные выводы)
+- Create: `dev/tests/baseline/<s1…s8>-red.md` (дословные выводы)
 
 **Interfaces:**
 - Consumes: SCENARIOS.md, qwen CLI, расширение ship-kit (сносится на время прогона).
@@ -503,19 +503,19 @@ Expected: вывод сохранён; расширение возвращено
 
 - [ ] **Step 3: Перенести выводы в репо и разметить рационализации**
 
-Для каждого sN: `cp /tmp/ship-kit-t3/sN-red.txt extensions/ship-kit/tests/baseline/sN-red.md`, сверху дописать заголовок `# sN RED — дата, модель` и списком — какие комплайенс-нарушения видны (цитатами).
+Для каждого sN: `cp /tmp/ship-kit-t3/sN-red.txt dev/tests/baseline/sN-red.md`, сверху дописать заголовок `# sN RED — дата, модель` и списком — какие комплайенс-нарушения видны (цитатами).
 
 - [ ] **Step 4: Коммит**
 
 ```bash
-git add extensions/ship-kit/tests/baseline
+git add dev/tests/baseline
 git commit -m "test(ship-kit): RED-baseline уровня 3 — дословные прогоны 8 сценариев без скиллов (flash)"
 ```
 
 ### Task 7: GREEN — прогоны «со скиллами», правки по находкам
 
 **Files:**
-- Create: `extensions/ship-kit/tests/baseline/<s1…s8>-green.md`
+- Create: `dev/tests/baseline/<s1…s8>-green.md`
 - Modify (только по находкам): соответствующие `skills/*/SKILL.md`
 
 **Interfaces:**
@@ -534,24 +534,24 @@ Expected: поведение по GREEN-критерию из SCENARIOS.md.
 
 - [ ] **Step 3: Перезапуск статических проверок после правок скиллов**
 
-Run: `bash extensions/ship-kit/tests/run_checks.sh`
+Run: `bash dev/tests/run_checks.sh`
 Expected: зелёный (правки не сломали контракты и golden; осознанное изменение формата отчёта — `--update-golden` отдельным шагом с пометкой в коммите).
 
 - [ ] **Step 4: Коммит**
 
 ```bash
-git add extensions/ship-kit/tests/baseline extensions/ship-kit/skills extensions/ship-kit/tests/golden
+git add dev/tests/baseline extensions/ship-kit/skills dev/tests/golden
 git commit -m "test(ship-kit): GREEN уровня 3 — 8/8 сценариев со скиллами (flash); правки скиллов по находкам"
 ```
 
 ### Task 8: Уровень 4 — e2e на стенде (4 сценария)
 
 **Files:**
-- Create: `extensions/ship-kit/e2e/registry.md` (стендовый md-реестр)
-- Create/Modify: `extensions/ship-kit/e2e/e2e-runs.md` (запись прогона)
+- Create: `dev/e2e/registry.md` (стендовый md-реестр)
+- Create/Modify: `dev/e2e/e2e-runs.md` (запись прогона)
 
 **Interfaces:**
-- Consumes: моки `mcp/` (id jenkins/jira/confluence/sonar/bitbucket/mmap в `.qwen/settings.json`), bare+клон, таргет с багом.
+- Consumes: моки `dev/e2e/mcp/` (id jenkins/jira/confluence/sonar/bitbucket/mmap в `.qwen/settings.json`), bare+клон, таргет с багом.
 
 - [ ] **Step 1: Стендовый реестр**
 
@@ -587,14 +587,14 @@ mcp-bitbucket.server: bitbucket
 - [ ] **Step 2: Развернуть стенд (одной строкой)**
 
 ```bash
-rm -rf extensions/ship-kit/e2e/bare.git extensions/ship-kit/e2e/e2e-run && git init --bare -q extensions/ship-kit/e2e/bare.git && git push -q extensions/ship-kit/e2e/bare.git main:main && git clone -q extensions/ship-kit/e2e/bare.git extensions/ship-kit/e2e/e2e-run && cp extensions/ship-kit/e2e/registry.md extensions/ship-kit/e2e/e2e-run/ship-kit.projects.md && rm -f extensions/ship-kit/e2e/e2e-run/.qwen/tmp/*-mock-state.json 2>/dev/null; echo stand-ready
+rm -rf dev/e2e/bare.git dev/e2e/e2e-run && git init --bare -q dev/e2e/bare.git && git push -q dev/e2e/bare.git main:main && git clone -q dev/e2e/bare.git dev/e2e/e2e-run && cp dev/e2e/registry.md dev/e2e/e2e-run/ship-kit.projects.md && rm -f dev/e2e/e2e-run/.qwen/tmp/*-mock-state.json 2>/dev/null; echo stand-ready
 ```
 Expected: `stand-ready`.
 
 - [ ] **Step 3: Сценарий e2e-1 — полный прогон**
 
 ```bash
-cd extensions/ship-kit/e2e/e2e-run && qwen --model glm-5.3-flash -y -p "Вызови скилл ship-kit:run с заданием «PRJ-42 запусти джобу и исправь ошибки, подтверждаю запуск сборки» и верни итог" 2>&1 | tail -40
+cd dev/e2e/e2e-run && qwen --model glm-5.3-flash -y -p "Вызови скилл ship-kit:run с заданием «PRJ-42 запусти джобу и исправь ошибки, подтверждаю запуск сборки» и верни итог" 2>&1 | tail -40
 ```
 Expected: гейт закрыт pre-approved(задание) — в плане раздел «Гейты»; сборка #1 FAILURE (фикстура) → diagnosis → код-фикс → PR-2 (гейт «пуш+PR» закрыт подтверждением из задания) → после MERGED пересборка #2 SUCCESS; `skill-runs/PRJ-42/plan.md` заполнен (состояние, items, аргументы с источниками); ошибок в issues.md нет или закрыты; push только в рабочую ветку.
 
@@ -632,7 +632,7 @@ Expected: деплой IFT FAILURE (фикстура infra) → diagnosis(deploy
 Находки — в `e2e/e2e-runs.md` (новая запись).
 
 ```bash
-git add extensions/ship-kit/e2e/registry.md extensions/ship-kit/e2e/e2e-runs.md extensions/ship-kit/skills
+git add dev/e2e/registry.md dev/e2e/e2e-runs.md extensions/ship-kit/skills
 git commit -m "test(ship-kit): e2e уровня 4 — полный прогон с гейтами, негатив цепочки, наследование аргументов, фикс-PR и ожидание апрува, гейт без подтверждения, стенды с деплой-фиксом без правки кода (flash)"
 ```
 
@@ -640,7 +640,7 @@ git commit -m "test(ship-kit): e2e уровня 4 — полный прогон 
 
 **Files:**
 - Modify: `extensions/ship-kit/skills/adapt-kit/SKILL.md` (§4)
-- Modify: `extensions/ship-kit/docs/tests-architecture.md`
+- Modify: `dev/tests-architecture.md`
 
 - [ ] **Step 1: adapt-kit §4 п.2 дополнить**
 
@@ -652,7 +652,7 @@ git commit -m "test(ship-kit): e2e уровня 4 — полный прогон 
 
 - [ ] **Step 3: Финальный прогон всего + коммит**
 
-Run: `bash extensions/ship-kit/tests/run_checks.sh && qwen extensions list | grep -c ship-kit`
+Run: `bash dev/tests/run_checks.sh && qwen extensions list | grep -c ship-kit`
 Expected: зелёный + 1.
 
 ```bash

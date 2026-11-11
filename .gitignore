@@ -2,5 +2,5 @@
 .qwen/autonomous-worker/
 .qwen/ship-kit/runs/
 openspec/changes/*/run-*.json
-extensions/ship-kit/e2e/bare.git/
-extensions/ship-kit/e2e/e2e-run/
+dev/e2e/bare.git/
+dev/e2e/e2e-run/

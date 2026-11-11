@@ -6,7 +6,7 @@
       "severity": "MINOR",
       "rule": "python:S1006",
       "message": "Не нужно сравнивать с True/False явно",
-      "component": "extensions/ship-kit/e2e/target/app.py",
+      "component": "dev/e2e/target/app.py",
       "line": 20
     }
   ]

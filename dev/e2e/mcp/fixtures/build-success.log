@@ -1,7 +1,7 @@
 [calc-app] Сборка
 Шаг 1/3: окружение готово (python3.13)
 Шаг 2/3: юнит-тесты
-$ python3 -m pytest extensions/ship-kit/e2e/target/ -q
+$ python3 -m pytest dev/e2e/target/ -q
 3 passed in 0.04s
 Шаг 3/3: артефакт собран
 BUILD SUCCESS
