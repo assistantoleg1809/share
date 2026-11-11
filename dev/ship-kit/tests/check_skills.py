@@ -98,6 +98,30 @@ for d in sorted(ROOT.iterdir()):
         for cm in CTX_WORDS.finditer(body):
             errors.append(f"{name}: предписание контекста исполнения «{cm.group(0)}»")
 
+GOLDEN = Path(__file__).resolve().parent / "golden" / "reports.txt"
+
+def reports_snapshot() -> str:
+    chunks = []
+    for d in sorted(ROOT.iterdir()):
+        if not d.is_dir() or d.name not in NEED_REPORT:
+            continue
+        t = (d / "SKILL.md").read_text(encoding="utf-8")
+        mm = re.search(r"^## Формат отчёта\n(.*?)(?=^## |\Z)", t, re.S | re.M)
+        chunks.append(f"### {d.name}\n{mm.group(1).strip() if mm else '<НЕТ>'}\n")
+    return "\n".join(chunks)
+
+if "--update-golden" in sys.argv:
+    GOLDEN.parent.mkdir(parents=True, exist_ok=True)
+    GOLDEN.write_text(reports_snapshot(), encoding="utf-8")
+    print(f"golden обновлён: {GOLDEN}")
+    sys.exit(0)
+
+if GOLDEN.exists():
+    if reports_snapshot() != GOLDEN.read_text(encoding="utf-8"):
+        errors.append("формат отчёта изменился против golden (осознанно? обнови: check_skills.py --update-golden)")
+else:
+    errors.append("нет tests/golden/reports.txt — сними: check_skills.py --update-golden")
+
 if errors:
     print("УРОВЕНЬ 1: НАРУШЕНИЯ")
     print("\n".join(f"- {e}" for e in errors))

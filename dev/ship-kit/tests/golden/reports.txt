@@ -1,0 +1,47 @@
+### diagnosis
+category, rootCause, fixable, fixHint, knownIssues (ключ, ссылка, суть),
+confidence (high/medium/low).
+
+### jobs
+Запуск: ok: true/false; kind (build/deploy); stand (если передан);
+number; url; gate: confirmed | pre-approved(источник) |
+inherited(причина) | declined; error (при ok=false — дословно что вернул
+инструмент).
+
+Ожидание: state (RUNNING/SUCCESS/FAILURE/UNSTABLE/ABORTED/UNKNOWN); kind
+(build/deploy); stand (если передан); number; url; errorSnippet; logTail;
+eta (мин, если передана ожидаемая длительность); possiblyStuck. Ожидание
+— чтение, без гейта.
+
+### openspec
+Каталог изменения; что и из каких источников взято; открытые вопросы,
+которые нужно решить человеку до реализации.
+
+### pr
+По режиму: implement+pr → ok, branch, prId, prUrl, gate, summary; check →
+state, commentsCount, unresolved, url; fix → ok, commit, pushed, gate,
+summary.
+
+### registry
+Файл (какой из цепочки); что изменено (дифф); предупреждения схемы, если
+были.
+
+### repair
+Свободный markdown с разбором, но обязательно закончи строками (по одной,
+без маркдауна):
+
+```
+OK: true|false
+COMMIT: <sha или пусто>
+BRANCH: <ветка или пусто>
+PUSHED: true|false
+GATE: confirmed | pre-approved(источник) | declined
+SUMMARY: <суть правки одной строкой>
+WORKTREE: <путь из pwd; пусто, если работа не в worktree>
+```
+
+### run
+Итог (SUCCESS / FAILED / STOPPED / STOPPED_BUDGET / WAITING — чего ждём:
+гейт, апрув PR, починка джобы); пройденные items с номерами сборок/деплоев
+и URL; ветки/PR-N/коммиты фиксов со ссылками; гейты (результат и источник
+каждого); открытые задачи (issues.md); путь к плану.
