@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Обновление эталона ship-kit: пересоздаёт ~/.qwen/extensions/ship-kit
-# из чистого корня extensions/ship-kit. Ручной запуск: bash dev/sync-reference.sh
+# Обновление эталона расширения: пересоздаёт ~/.qwen/extensions/<имя>
+# из чистого корня extensions/<имя>. Ручной запуск:
+#   bash dev/sync-reference.sh [имя-расширения]   (дефолт ship-kit)
 set -euo pipefail
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
-ext="$repo/extensions/ship-kit"
-name="ship-kit"
+name="${1:-ship-kit}"
+ext="$repo/extensions/$name"
 
 [ -f "$ext/qwen-extension.json" ] || { echo "нет манифеста: $ext"; exit 1; }
 

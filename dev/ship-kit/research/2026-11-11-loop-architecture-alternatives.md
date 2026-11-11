@@ -10,7 +10,7 @@ MCP-серверы CI-транспорта. Живость (звёзды/пос�
 **Вопрос:** ship-kit — это `loop(do→pr) → loop(build→fix) → loop(deploy→fix)`
 с общим md-реестром параметров на проекты. Нужен ли рефакторинг, переход на
 готовое проверенное решение, или оставить как есть? (План
-`dev/plans/2026-11-11-gates-transport-stands.md`, Task 7.)
+`dev/ship-kit/plans/2026-11-11-gates-transport-stands.md`, Task 7.)
 
 ## Резюме
 
@@ -384,7 +384,7 @@ flowchart TD
 **Принято (2026-11-11): вариант (в) — оставить скилловое ядро, перестроить
 конвейер на items-модель** (`item(action, skill, knowledge, PR)`), см. §8.
 План задач перестроен под это решение:
-`dev/plans/2026-11-11-gates-transport-stands.md` (v3).
+`dev/ship-kit/plans/2026-11-11-gates-transport-stands.md` (v3).
 Внешние решения (PR-Agent, agent-workspace-fabric, OpenHands Canvas)
 рассмотрены и отклонены; Qwen Workflows как транспорт ступеней — отложенная
 опция.

@@ -33,10 +33,13 @@ description: Использовать, когда нужно изменить ф
 4. Сверь схему (ключи и обязательность — в примере): у проекта обязательны
    `jiraKey`, `repoSsh`, `ce`; alias-ключи — только из фиксированного списка
    (`mcp-build`, `mcp-deploy`, `mcp-sonar`, `mcp-jira`, `mcp-confluence`,
-   `mcp-bitbucket`, `mcp-mmap`); для `mcp-build`/`mcp-deploy` — `.job.path`
-   и `.job.name`, для `mcp-sonar` — `.projectKey`; опционально
+   `mcp-bitbucket`, `mcp-mmap`); опционально
    `<alias>.tool.run|.tool.status|.tool.log` — точные имена инструментов
-   MCP запуска/статуса/лога на сервере alias; при наличии `mcp-deploy.*` —
+   MCP запуска/статуса/лога на сервере alias; **модель транспорта**
+   `<alias>.model` — только `jenkins` (дефолт) или `custom`, и по модели
+   обязательны ключи запуска: `jenkins` → `<alias>.job.path` и
+   `<alias>.job.name`, `custom` → `<alias>.launch.params` (карта k=v);
+   для `mcp-sonar` — `.projectKey`; при наличии `mcp-deploy.*` —
    `deploy.stands`: значения только `DEV`, `ST`, `IFT`, `PSI`, в
    каноническом порядке, IFT и PSI обязательны в составе (опционально
    `mcp-deploy.job.name.<СТЕНД>` — своя джоба на стенд); `retryLimit` —

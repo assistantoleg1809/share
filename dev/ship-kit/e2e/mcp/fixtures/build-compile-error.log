@@ -1,14 +1,14 @@
 [calc-app] Сборка #1
 Шаг 1/3: окружение готово (python3.13)
 Шаг 2/3: юнит-тесты
-$ python3 -m pytest dev/e2e/target/ -q
-IMPORT ERROR dev/e2e/target/test_app.py
+$ python3 -m pytest dev/ship-kit/e2e/target/ -q
+IMPORT ERROR dev/ship-kit/e2e/target/test_app.py
 Traceback (most recent call last):
-  File "dev/e2e/target/app.py", line 19
+  File "dev/ship-kit/e2e/target/app.py", line 19
     def div(a, b)
                  ^
 SyntaxError: expected ':'
 ERROR: collected 0 items / 1 error
 ============================ 1 error in 0.05s =============================
 Шаг 3/3: прерван из-за ошибки
-BUILD FAILURE: ошибка компиляции (SyntaxError) в dev/e2e/target/app.py:19
+BUILD FAILURE: ошибка компиляции (SyntaxError) в dev/ship-kit/e2e/target/app.py:19

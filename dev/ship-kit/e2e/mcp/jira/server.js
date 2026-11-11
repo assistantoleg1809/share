@@ -5,7 +5,7 @@ const readline = require('readline');
 const ASSIGNED = [
   {
     key: 'PRJ-42',
-    summary: 'div(x,0) должен возвращать None — в dev/e2e/target/app.py синтаксическая ошибка',
+    summary: 'div(x,0) должен возвращать None — в dev/ship-kit/e2e/target/app.py синтаксическая ошибка',
     url: 'https://jira.example.com/browse/PRJ-42',
     jenkinsJob: 'calc-app',
   },
@@ -28,7 +28,7 @@ function call(name, a) {
     return JSON.stringify({
       key: a.key,
       summary: (ASSIGNED.find((t) => t.key === a.key) || {}).summary || 'Задача ' + a.key,
-      description: 'Требование: div(x, 0) возвращает None. Целевой файл dev/e2e/target/app.py. Сборочная джоба calc-app, deploy-джоба app-deploy.',
+      description: 'Требование: div(x, 0) возвращает None. Целевой файл dev/ship-kit/e2e/target/app.py. Сборочная джоба calc-app, deploy-джоба app-deploy.',
     });
   }
   if (name === 'search_issues') {

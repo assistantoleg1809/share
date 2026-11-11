@@ -63,9 +63,11 @@ item = `item(action, skill, knowledge, PR)`; слоты независимы:
 
 1. Прочитай md-реестр (`ship-kit.projects.md` в корне проекта, иначе
    `~/.qwen/ship-kit/projects.md`): alias→сервер (только существующие
-   записи; отсутствие записи = «в проекте этого MCP нет»), пути и названия
-   джоб (в т.ч. `mcp-deploy.job.name.<СТЕНД>`), `deploy.stands`,
-   knowledge-пак, КЭ, `branchDefault`, `branch.task`/`branch.bug`, лимиты
+   записи; отсутствие записи = «в проекте этого MCP нет»), параметры
+   запуска джоб по модели транспорта (`<alias>.model`, дефолт `jenkins` —
+   `job.path`/`job.name`, в т.ч. `mcp-deploy.job.name.<СТЕНД>`;
+   `custom` — `launch.params`), `deploy.stands`, knowledge-пак, КЭ,
+   `branchDefault`, `branch.task`/`branch.bug`, лимиты
    (`runLimit.build`, `runLimit.deploy`, `retryLimit`, `fixRetries`,
    `runBudget`), `errorPolicy.notFixable`.
 2. Создай/прочитай `skill-runs/<тег>/plan.md` — план и есть состояние
