@@ -2,8 +2,8 @@
 // bitbucket — эталонный stdio MCP-мок: PR с одним замечанием ревьюера.
 // Цикл: create_pr → PR OPEN с замечанием; после resolve_comment всех
 // замечаний → MERGED. Состояние — в файле .qwen/tmp/bitbucket-mock-state.json
-// в cwd сессии: каждый workflow-агент получает свой процесс мока, состояние
-// обязано переживать агентов (урок e2e из jenkins-мока).
+// в cwd сессии: у каждого вызова свой stdio-процесс, состояние
+// обязано переживать вызовы (урок e2e из jenkins-мока).
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');

@@ -10,11 +10,7 @@
 Обязательные правила любой доработки — скилл
 [skills/adapt-kit/SKILL.md](../skills/adapt-kit/SKILL.md).
 
-Основа: Qwen Code 0.24.6; исследование workflows-эпохи —
-[qwen-workflows.md](../qwen-workflows.md) и
-[qwen-workflows-dev-guide.md](../qwen-workflows-dev-guide.md); e2e-уроки —
-[mcp-jenkins-test](../mcp-jenkins-test/README.md) и [e2e/e2e-run.md](../e2e/e2e-run.md).
-История агентской эпохи (11 агентов, 3 workflows) — §9 и git history.
+Основа: Qwen Code 0.24.6.
 
 ## 1. Состав
 
@@ -38,7 +34,7 @@ docs/
 mcp/                     6 stdio-моков + фикстуры логов (e2e-стенд)
 e2e/
   target/                таргет с инжектированным багом (app.py:19)
-  e2e-run.md             журнал e2e-прогонов (история, не переписывается)
+  e2e-runs.md            журнал e2e-прогонов (создаётся при прогонах)
   bare.git/, e2e-run/    изолированный прогон (gitignore)
 .qwen/settings.json      MCP-моки стенда
 ```
@@ -174,23 +170,7 @@ skill-runs/<тег>/
 Провалившийся шаг не пропускается молча — становится задачей в issues.md,
 чинит другой скилл. В `.gitignore` целевого проекта (runtime-состояние).
 
-## 9. Историческая справка: агентская эпоха
-
-До 2026-11-10 комплект состоял из 11 агентов (`agents/*.md`) и 3 workflows
-(`build-autofix`, `deploy-autofix`, `autonomous-worker`) со строгим
-соответствием 1:1 «агент ↔ скилл-роль» (методика — в скилле, агент —
-механические границы прав). 2026-11-10: агенты/workflows заморожены,
-приоритет отдан скиллам, роли переведены на MCP-alias, затем консолидация
-15→9 (`jobs`, `diagnosis`/`repair` с командными файлами, `pr`, `review`,
-`registry`, `adapt-kit`); файлы агентов/workflows удалены. Уроки эпохи,
-не потерявшие ценности: имя workflow берётся из `meta.name` и обязано быть
-kebab-lowercase, иначе загрузчик молча пропускает скрипт; headless-args
-может прийти строкой — нормализовать; файловое состояние для
-MCP-моков. Отдельный эталон TDD-цикла —
-[mcp-jenkins-test](../mcp-jenkins-test/README.md). Журнал прогонов —
-[e2e/e2e-run.md](../e2e/e2e-run.md).
-
-## 10. Испытательный стенд (e2e)
+## 9. Испытательный стенд (e2e)
 
 Моки живут в `mcp/` и подключены `.qwen/settings.json` под id `jenkins`,
 `jira`, `confluence`, `sonar`, `bitbucket`, `mmap`; **md-реестр стенда
@@ -211,7 +191,7 @@ MCP-моков. Отдельный эталон TDD-цикла —
 [tests-architecture.md](tests-architecture.md) (план; прогоны — только на
 `glm-5.3-flash`).
 
-## 11. Чек-лист адаптации под целевой проект
+## 10. Чек-лист адаптации под целевой проект
 
 1. **MCP-серверы**: id проекта в `settings.json → mcpServers` — какие id
    скрываются за alias, определяет реестр (п. 4), скиллы править не нужно.
@@ -223,7 +203,7 @@ MCP-моков. Отдельный эталон TDD-цикла —
    человек.
 5. **.gitignore целевого проекта**: `skill-runs/`.
 
-## 12. Границы решения
+## 11. Границы решения
 
 - `review` не запускает код — только чтение; проверка исполнением
   остаётся за сборкой и TDD-шагом `repair`.

@@ -1,12 +1,12 @@
 {
   "name": "ship-kit",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "displayName": {
     "ru": "Ship Kit — скиллы конвейера «тикет → прод»",
     "en": "Ship Kit — ticket-to-pipeline skills"
   },
   "description": {
-    "ru": "9 скиллов конвейера «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление»: run (диспетчер «<тег> <задание>», план skill-runs, циклы до успеха с ожиданием апрува), jobs (запуск/ожидание), diagnosis и repair с командными файлами build|deploy (разные команды — разная эскалация), openspec, pr, review, registry (md-реестр проектов), adapt-kit (правила доработки). Скиллы работают только с MCP из аргументов вызова. Агенты/workflows агентской эпохи удалены.",
-    "en": "9 skills for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop: run (dispatcher \"<tag> <job>\", skill-runs plan, loops until success with approval waiting), jobs (launch/watch), diagnosis and repair with per-team build|deploy files (different teams, different escalation), openspec, pr, review, registry (md projects file), adapt-kit (adaptation rules). Skills use only MCPs passed via call arguments. Agent-era agents/workflows removed."
+    "ru": "9 скиллов конвейера «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление»: run (диспетчер «<тег> <задание>», план skill-runs, циклы до успеха с ожиданием апрува), jobs (запуск/ожидание), diagnosis и repair с командными файлами build|deploy (разные команды — разная эскалация), openspec, pr, review, registry (md-реестр проектов), adapt-kit (правила доработки). Скиллы работают только с MCP из аргументов вызова.",
+    "en": "9 skills for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop: run (dispatcher \"<tag> <job>\", skill-runs plan, loops until success with approval waiting), jobs (launch/watch), diagnosis and repair with per-team build|deploy files (different teams, different escalation), openspec, pr, review, registry (md projects file), adapt-kit (adaptation rules). Skills use only MCPs passed via call arguments."
   }
 }

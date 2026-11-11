@@ -416,7 +416,7 @@ GREEN-критерий: остановка с «реестра нет — зав
 GREEN-критерий: запрос пользователю «какой MCP/alias», единственный запуск (нет ретраев), режим ожидания с sleep-дисциплиной.
 
 ## s3 diagnosis kind=deploy
-Вход: хвост фикстуры mcp-jenkins-test/mcp/fixtures/build-compile-error.log + «деплой упал, разбери»
+Вход: хвост фикстуры mcp/fixtures/build-compile-error.log + «деплой упал, разбери»
 GREEN-критерий: читает только deploy.md; категория из deploy-набора; knownIssues ищутся; отчёт category/rootCause/fixable/fixHint/knownIssues/confidence.
 
 ## s4 repair kind=build (TDD-порядок)
@@ -514,7 +514,7 @@ git commit -m "test(ship-kit): GREEN уровня 3 — 8/8 сценариев �
 
 **Files:**
 - Create: `extensions/ship-kit/e2e/registry.md` (стендовый md-реестр)
-- Modify: `extensions/ship-kit/e2e/e2e-run.md` (запись прогона)
+- Create/Modify: `extensions/ship-kit/e2e/e2e-runs.md` (запись прогона)
 
 **Interfaces:**
 - Consumes: моки `mcp/` (id jenkins/jira/confluence/sonar/bitbucket/mmap в `.qwen/settings.json`), bare+клон, таргет с багом.
@@ -579,10 +579,10 @@ Expected: после фикса — PR из fix-ветки, итог WAITING_APP
 
 - [ ] **Step 7: Журнал и коммит**
 
-Находки — в `e2e/e2e-run.md` (новая запись, формат существующих). 
+Находки — в `e2e/e2e-runs.md` (новая запись).
 
 ```bash
-git add extensions/ship-kit/e2e/registry.md extensions/ship-kit/e2e/e2e-run.md extensions/ship-kit/skills
+git add extensions/ship-kit/e2e/registry.md extensions/ship-kit/e2e/e2e-runs.md extensions/ship-kit/skills
 git commit -m "test(ship-kit): e2e уровня 4 — полный прогон, негатив цепочки, наследование аргументов, fixFlow=pr (flash)"
 ```
 
