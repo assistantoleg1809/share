@@ -39,8 +39,10 @@ Markdown, плоские строки `ключ: значение` внутри 
 | `runBudget` | нет | Бюджет прогона в минутах (по исчерпании — честная остановка STOPPED_BUDGET) |
 | `context` | нет | Что за проект и его особенности (строка) |
 | `errorPolicy.notFixable` | нет | Категории триажа, при которых фикс не запускается (через запятую) |
+| `knowledge` | нет | Имя knowledge-пака — командных файлов ролей (дефолт `jenkins`; для другого CI — свой пак) |
 | `<alias>.server` | при использовании | Фактический id MCP-сервера в `settings.json → mcpServers`, на который отображается alias |
-| `<alias>.job.path` | для mcp-build / mcp-deploy | Путь до джобы (папки Jenkins) |
+| `<alias>.tool.run` / `.tool.status` / `.tool.log` | нет | Точные имена инструментов MCP запуска/статуса/лога на сервере alias (не задано — роль ищет по описанию) |
+| `<alias>.job.path` | для mcp-build / mcp-deploy | Путь до джобы (папки CI) |
 | `<alias>.job.name` | для mcp-build / mcp-deploy | Точное название джобы — идёт скиллу аргументом |
 | `<alias>.projectKey` | для mcp-sonar | Ключ проекта в Sonar |
 
@@ -48,8 +50,8 @@ Markdown, плоские строки `ключ: значение` внутри 
 
 | Alias | Роль | Используют скиллы |
 |---|---|---|
-| `mcp-build` | Jenkins-сервер сборки | jobs (kind=build), diagnosis, repair |
-| `mcp-deploy` | Jenkins-сервер деплоя | jobs (kind=deploy), diagnosis, repair |
+| `mcp-build` | CI-сервер сборки | jobs (kind=build), diagnosis, repair |
+| `mcp-deploy` | CI-сервер деплоя | jobs (kind=deploy), diagnosis, repair |
 | `mcp-sonar` | Качество/уязвимости (Sonar) | diagnosis, repair |
 | `mcp-jira` | Задачи (Jira) | openspec, pr, diagnosis, repair |
 | `mcp-confluence` | Документация (Confluence) | openspec, diagnosis, repair |

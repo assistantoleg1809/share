@@ -34,11 +34,13 @@ description: Использовать, когда нужно изменить ф
    `jiraKey`, `repoSsh`, `ce`; alias-ключи — только из фиксированного списка
    (`mcp-build`, `mcp-deploy`, `mcp-sonar`, `mcp-jira`, `mcp-confluence`,
    `mcp-bitbucket`, `mcp-mmap`); для `mcp-build`/`mcp-deploy` — `.job.path`
-   и `.job.name`, для `mcp-sonar` — `.projectKey`; при наличии
-   `mcp-deploy.*` — `deploy.stands`: значения только `DEV`, `ST`, `IFT`,
-   `PSI`, в каноническом порядке, IFT и PSI обязательны в составе
-   (опционально `mcp-deploy.job.name.<СТЕНД>` — своя джоба на стенд);
-   `retryLimit` — число.
+   и `.job.name`, для `mcp-sonar` — `.projectKey`; опционально
+   `<alias>.tool.run|.tool.status|.tool.log` — точные имена инструментов
+   MCP запуска/статуса/лога на сервере alias; при наличии `mcp-deploy.*` —
+   `deploy.stands`: значения только `DEV`, `ST`, `IFT`, `PSI`, в
+   каноническом порядке, IFT и PSI обязательны в составе (опционально
+   `mcp-deploy.job.name.<СТЕНД>` — своя джоба на стенд); `retryLimit` —
+   число.
 5. Убедись, что каждый `*.server` существует в `settings.json → mcpServers`
    проекта (или центрального, для центрального реестра). Не существует —
    скажи об этом пользователю и не пиши значение молча.
