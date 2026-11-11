@@ -30,8 +30,7 @@ Markdown, плоские строки `ключ: значение` внутри 
 | `ce` | да | КЭ — конфигурационный элемент: идентификатор объекта для обращений по МСП (например, МСП результатов проверок уязвимостей); передаётся скиллам аргументом |
 | `branchDefault` | нет | Ветка по умолчанию (args сильнее) |
 | `branch.task` / `branch.bug` | нет | Префикс шаблона рабочей ветки `<X>/<КЛЮЧ>` для задач/багов (дефолты `feature` / `bugfix`; явный шаблон в задании сильнее реестра) |
-| `fixFlow` | нет | Как фикс сборки попадает в основную ветку: `direct` (пуш ветки фикса и пересборка, дефолт) или `pr` (фикс → ПР → ожидание апрува человеком → MERGED → пересборка) |
-| `fixRetries` | нет | Максимум кругов правок по замечаниям ПР (дефолт 3) |
+| `fixRetries` | нет | Максимум кругов правок по замечаниям ПР (дефолт 3); замечания правятся пушем в тот же PR |
 | `runLimit.build` / `runLimit.deploy` | нет | Максимум попыток цикла сборки/деплоя за прогон (дефолты 3/2; `runLimit.deploy` — на стенд; args сильнее) |
 | `retryLimit` | нет | Повторов запуска без фикса и без нового гейта по flaky/таймауту (дефолт 1) |
 | `deploy.stands` | при `mcp-deploy.*` | Стенды деплоя — упорядоченный список из `DEV, ST, IFT, PSI` (канонический порядок); IFT и PSI обязательны в составе, DEV/ST опциональны |
@@ -83,7 +82,6 @@ branch.task: feature
 branch.bug: bugfix
 context: Калькулятор, EFS-деплой, длинные сборки (~40 мин)
 errorPolicy.notFixable: infra, sonar
-fixFlow: direct
 runBudget: 90
 mcp-build.server: jenkins-conf
 mcp-build.job.path: folder/team
@@ -107,8 +105,7 @@ jiraKey: BIL
 repoSsh: git@git.corp:team/billing.git
 ce: BILLING-CORE
 branchDefault: develop
-context: Биллинг, деплоя нет, сборка + sonar, защищённая ветка — фиксы через ПР
-fixFlow: pr
+context: Биллинг, деплоя нет, сборка + sonar, защищённая ветка — все фиксы через ПР
 fixRetries: 2
 mcp-build.server: jenkins-corp
 mcp-build.job.path: folder/billing
