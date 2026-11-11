@@ -32,7 +32,10 @@ Markdown, плоские строки `ключ: значение` внутри 
 | `branch.task` / `branch.bug` | нет | Префикс шаблона рабочей ветки `<X>/<КЛЮЧ>` для задач/багов (дефолты `feature` / `bugfix`; явный шаблон в задании сильнее реестра) |
 | `fixFlow` | нет | Как фикс сборки попадает в основную ветку: `direct` (пуш ветки фикса и пересборка, дефолт) или `pr` (фикс → ПР → ожидание апрува человеком → MERGED → пересборка) |
 | `fixRetries` | нет | Максимум кругов правок по замечаниям ПР (дефолт 3) |
-| `runLimit.build` / `runLimit.deploy` | нет | Максимум попыток цикла сборки/деплоя за прогон (дефолты 3/2; args сильнее) |
+| `runLimit.build` / `runLimit.deploy` | нет | Максимум попыток цикла сборки/деплоя за прогон (дефолты 3/2; `runLimit.deploy` — на стенд; args сильнее) |
+| `retryLimit` | нет | Повторов запуска без фикса и без нового гейта по flaky/таймауту (дефолт 1) |
+| `deploy.stands` | при `mcp-deploy.*` | Стенды деплоя — упорядоченный список из `DEV, ST, IFT, PSI` (канонический порядок); IFT и PSI обязательны в составе, DEV/ST опциональны |
+| `mcp-deploy.job.name.<СТЕНД>` | нет | Своя deploy-джоба на стенд (переопределяет `mcp-deploy.job.name`) |
 | `runBudget` | нет | Бюджет прогона в минутах (по исчерпании — честная остановка STOPPED_BUDGET) |
 | `context` | нет | Что за проект и его особенности (строка) |
 | `errorPolicy.notFixable` | нет | Категории триажа, при которых фикс не запускается (через запятую) |
@@ -86,6 +89,8 @@ mcp-build.job.name: calc-app
 mcp-deploy.server: jenkins-conf
 mcp-deploy.job.path: folder/team
 mcp-deploy.job.name: calc-app-deploy
+deploy.stands: DEV, ST, IFT, PSI
+retryLimit: 1
 mcp-sonar.server: sonar-corp
 mcp-sonar.projectKey: corp-calc
 mcp-jira.server: jira-corp
