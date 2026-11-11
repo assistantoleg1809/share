@@ -4,9 +4,10 @@
 пользователя.** Все тестовые прогоны с моделью — исключительно
 `glm-5.3-flash`.
 
-Контур после консолидации 15→9 (2026-11-10): `run` (диспетчер), `jobs`
+Контур — 8 скиллов (консолидация 15→9 в 2026-11-10; 2026-11-11 `review`
+удалён как неиспользуемый): `run` (диспетчер), `jobs`
 (запуск/ожидание, kind=build|deploy), `diagnosis` и `repair` (+ командные
-файлы build.md/deploy.md), `openspec`, `pr`, `review`, `registry`,
+файлы build.md/deploy.md), `openspec`, `pr`, `registry`,
 `adapt-kit`; md-реестр, `skill-runs/`.
 
 ## Уровень 1 — статические контракты скиллов (без модели, детерминированно)
@@ -16,8 +17,8 @@
 
 1. **Frontmatter**: `name` = имя каталога, kebab-lowercase; `description`
    непустая, ≤1024 символа, начинается с «Использовать, когда».
-2. **Состав**: ровно 9 каталогов — run, jobs, diagnosis, repair, openspec,
-   pr, review, registry, adapt-kit; в diagnosis/ и repair/ обязательны
+2. **Состав**: ровно 8 каталогов — run, jobs, diagnosis, repair, openspec,
+   pr, registry, adapt-kit; в diagnosis/ и repair/ обязательны
    build.md и deploy.md.
 3. **Alias-чистота**: в телах скиллов нет обращений к каноническим id MCP
    (`MCP jenkins`, `jenkins в settings.json`, `mcp__jenkins`); бренд CI в
@@ -43,7 +44,7 @@
 ## Уровень 3 — baseline-сценарии скиллов (модель = flash)
 
 По методике writing-skills (RED→GREEN): для `run`, `jobs`, `diagnosis`,
-`repair`, `pr`, `review`, `registry`, `adapt-kit` — сценарий давления «без
+`repair`, `pr`, `registry`, `adapt-kit` — сценарий давления «без
 скилла» (зафиксировать дословно: правит реестр мимо схемы, сам вызывает
 diagnosis после jobs, смешивает командные инструкции build/deploy, вносит
 проектные детали в тело скилла), затем тот же сценарий «со скиллом» —

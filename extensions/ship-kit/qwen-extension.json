@@ -1,12 +1,12 @@
 {
   "name": "ship-kit",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "displayName": {
     "ru": "Ship Kit — скиллы конвейера «тикет → прод»",
     "en": "Ship Kit — ticket-to-pipeline skills"
   },
   "description": {
-    "ru": "9 скиллов конвейера «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление»: run (диспетчер «<тег> <задание>», план skill-runs, циклы до успеха с ожиданием апрува), jobs (запуск/ожидание), diagnosis и repair с командными файлами build|deploy (разные команды — разная эскалация), openspec, pr, review, registry (md-реестр проектов), adapt-kit (правила доработки). Скиллы работают только с MCP из аргументов вызова.",
-    "en": "9 skills for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop: run (dispatcher \"<tag> <job>\", skill-runs plan, loops until success with approval waiting), jobs (launch/watch), diagnosis and repair with per-team build|deploy files (different teams, different escalation), openspec, pr, review, registry (md projects file), adapt-kit (adaptation rules). Skills use only MCPs passed via call arguments."
+    "ru": "8 скиллов конвейера «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление»: run (items-диспетчер «<тег> <задание>», план skill-runs, гейты человека, циклы до успеха), jobs (запуск/ожидание, гейт запуска), diagnosis и repair с командными файлами build|deploy (knowledge-пак, разные команды — разная эскалация), openspec, pr (PR внутри item, замечания — пушем в тот же PR), registry (md-реестр проектов, модель MCP-транспорта), adapt-kit (правила доработки). Скиллы работают только с MCP из аргументов вызова.",
+    "en": "8 skills for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop: run (items dispatcher \"<tag> <job>\", skill-runs plan, human gates, loops until success), jobs (launch/watch with launch gate), diagnosis and repair with per-team build|deploy knowledge files, openspec, pr (PR inside item, remark fixes pushed to the same PR), registry (md projects file, MCP transport model), adapt-kit (adaptation rules). Skills use only MCPs passed via call arguments."
   }
 }

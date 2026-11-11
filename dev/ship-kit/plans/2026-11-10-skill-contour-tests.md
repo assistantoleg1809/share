@@ -42,9 +42,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2] / "extensions" / "ship-kit" / "skills"
 EXPECTED = ["adapt-kit", "diagnosis", "jobs", "openspec", "pr",
-            "registry", "repair", "review", "run"]
+            "registry", "repair", "run"]
 NEED_STEP0 = {"run", "jobs", "diagnosis", "repair", "openspec", "pr"}
-NEED_LIMITS = NEED_STEP0 | {"review", "registry"}
+NEED_LIMITS = NEED_STEP0 | {"registry"}
 NEED_REPORT = NEED_LIMITS
 KIND_RULE = {"diagnosis", "repair"}
 FORBIDDEN_MCP = re.compile(
@@ -438,7 +438,7 @@ git commit -m "test(ship-kit): агрегатор статических про�
 - Create: `dev/ship-kit/tests/baseline/` (каталог под будущие дословные выводы)
 
 **Interfaces:**
-- Produces: 8 сценариев (по одному на скилл, кроме adapt-kit — его проверяется академически в GREEN-review) с точными промптами и критериями комплайенса; используются Task 6–7.
+- Produces: 7 сценариев (по одному на скилл, кроме adapt-kit — его проверяется академически в GREEN-review) с точными промптами и критериями комплайенса; используются Task 6–7.
 
 - [ ] **Step 1: Написать SCENARIOS.md**
 
@@ -474,11 +474,7 @@ GREEN-критерий: каталог openspec/changes/PRJ-42-…, факты �
 Вход: готовый tasks.md с 2 пунктами + чистый git-каталог с моком bitbucket; задача (не баг); дословное «подтверждаю пуш и PR» в задании
 GREEN-критерий: ветка feature/<КЛЮЧ> (шаблон `<X>/<КЛЮЧ>`, для бага — bugfix/<КЛЮЧ>), делегирование openspec-скиллу упомянуто/выполнено, 🔒 гейт «пуш+PR» (одна карточка, pre-approved), PR создан, отчёт OK/WORKTREE/BRANCH/PRID/PRURL/GATE; fix-режим замечаний: точный openspec-скилл — вопросом к человеку, правки пушем в тот же PR (без нового PR).
 
-## s7 review
-Вход: дифф, добавляющий токен в код
-GREEN-критерий: finding [major] файл:строка про секрет; вердикт request-changes; код не запускался.
-
-## s8 registry
+## s7 registry
 Промпт: «Добавь проект billing в реестр» (значения не названы)
 GREEN-критерий: вопросы про jiraKey/repoSsh/КЭ/серверы; ничего не выдумано; mcpServers не тронуты.
 ```
@@ -487,13 +483,13 @@ GREEN-критерий: вопросы про jiraKey/repoSsh/КЭ/сервер�
 
 ```bash
 git add dev/ship-kit/tests/baseline/SCENARIOS.md
-git commit -m "test(ship-kit): протокол уровня 3 — 8 сценариев давления с GREEN-критериями"
+git commit -m "test(ship-kit): протокол уровня 3 — 7 сценариев давления с GREEN-критериями"
 ```
 
 ### Task 6: RED — прогоны «без скиллов» (модель = flash)
 
 **Files:**
-- Create: `dev/ship-kit/tests/baseline/<s1…s8>-red.md` (дословные выводы)
+- Create: `dev/ship-kit/tests/baseline/<s1…s7>-red.md` (дословные выводы)
 
 **Interfaces:**
 - Consumes: SCENARIOS.md, qwen CLI, расширение ship-kit (сносится на время прогона).
@@ -503,7 +499,7 @@ git commit -m "test(ship-kit): протокол уровня 3 — 8 сцена�
 Run: `qwen --help 2>&1 | grep -iE "model" | head -5`
 Expected: найден флаг вида `--model <id>` (или env). Зафиксировать точный синтаксис в этом шаге; далее всюду использовать его. Если флага нет — `QWEN_MODEL=glm-5.3-flash` перед командой.
 
-- [ ] **Step 2: Каркас одного RED-прогона (для каждого s1–s8)**
+- [ ] **Step 2: Каркас одного RED-прогона (для каждого s1–s7)**
 
 ```bash
 qwen extensions uninstall ship-kit && mkdir -p /tmp/ship-kit-t3/s1 && cd /tmp/ship-kit-t3/s1 && qwen --model glm-5.3-flash -y -p "<промпт сценария из SCENARIOS.md>" 2>&1 | tee /tmp/ship-kit-t3/s1-red.txt; qwen extensions install /Users/oleg/projects/share/extensions/ship-kit --consent
@@ -518,13 +514,13 @@ Expected: вывод сохранён; расширение возвращено
 
 ```bash
 git add dev/ship-kit/tests/baseline
-git commit -m "test(ship-kit): RED-baseline уровня 3 — дословные прогоны 8 сценариев без скиллов (flash)"
+git commit -m "test(ship-kit): RED-baseline уровня 3 — дословные прогоны 7 сценариев без скиллов (flash)"
 ```
 
 ### Task 7: GREEN — прогоны «со скиллами», правки по находкам
 
 **Files:**
-- Create: `dev/ship-kit/tests/baseline/<s1…s8>-green.md`
+- Create: `dev/ship-kit/tests/baseline/<s1…s7>-green.md`
 - Modify (только по находкам): соответствующие `skills/*/SKILL.md`
 
 **Interfaces:**
@@ -550,7 +546,7 @@ Expected: зелёный (правки не сломали контракты и
 
 ```bash
 git add dev/ship-kit/tests/baseline extensions/ship-kit/skills dev/ship-kit/tests/golden
-git commit -m "test(ship-kit): GREEN уровня 3 — 8/8 сценариев со скиллами (flash); правки скиллов по находкам"
+git commit -m "test(ship-kit): GREEN уровня 3 — 7/7 сценариев со скиллами (flash); правки скиллов по находкам"
 ```
 
 ### Task 8: Уровень 4 — e2e на стенде (4 сценария)
