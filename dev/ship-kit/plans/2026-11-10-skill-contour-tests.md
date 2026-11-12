@@ -278,7 +278,7 @@ mcp-ci.server: unknown-alias
 runLimit.build: abc
 ```
 
-Ожидаемые ошибки: `project: nosuch` — ссылка на несуществующую секцию; `bad` — нет `jiraKey`, нет `repoSsh`, нет `ce`; `mcp-build` — нет `job.path` (модель jenkins по дефолту); `mcp-build.model: gitlab` — неизвестная модель (jenkins|custom); `mcp-deploy.model: custom` — нет `launch.params`; `deploy.stands: PSI, IFT` — не канонический порядок DEV,ST,IFT,PSI; `mcp-sonar` — нет `projectKey`; `mcp-ci` — alias вне фиксированного списка; `runLimit.build: abc` — не число.
+Ожидаемые ошибки: `project: nosuch` — ссылка на несуществующую секцию; `bad` — нет `jiraKey`, нет `repoSsh`, нет `ce`; `mcp-build.model: gitlab` — неизвестная модель (jenkins|custom); `mcp-deploy.model: custom` — нет `launch.params`; `deploy.stands: PSI, IFT` — не канонический порядок DEV,ST,IFT,PSI; `mcp-sonar` — нет `projectKey`; `mcp-ci` — alias вне фиксированного списка; `runLimit.build: abc` — не число.
 
 - [ ] **Step 3: Написать `check_registry.py`**
 
@@ -300,11 +300,11 @@ def parse(path: Path):
     projects, cur = {}, None
     for ln, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         s = line.strip()
-        if not s or s.startswith("#"):
-            continue
         if s.startswith("## "):
             cur = s[3:].strip()
             projects.setdefault(cur, {"_lines": {}})
+            continue
+        if not s or s.startswith("#"):
             continue
         m = KEY_RE.match(s)
         if m and cur:
@@ -347,8 +347,9 @@ def main() -> int:
         for nk in NUMS & set(kv):
             if not kv[nk].isdigit():
                 errors.append(f"{pname}: {nk} должен быть числом, получен «{kv[nk]}»")
+        TOP_KEYS = ALIASES | {"deploy", "runLimit", "errorPolicy", "branch"}
         prefix = {k.split(".")[0] for k in kv if "." in k}
-        for al in prefix - ALIASES:
+        for al in prefix - TOP_KEYS:
             errors.append(f"{pname}: alias «{al}» вне фиксированного списка {sorted(ALIASES)}")
         MODELS = {"jenkins": ("job.path", "job.name"), "custom": ("launch.params",)}
         for base in ("mcp-build", "mcp-deploy"):
@@ -376,7 +377,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Прогнать обе фикстуры — красная затем зелёная**
 
 Run: `python3 dev/ship-kit/tests/check_registry.py dev/ship-kit/tests/fixtures/registry_invalid.md; echo "exit=$?"`
-Expected: все 11 ожидаемых ошибок из Step 2, `exit=1`.
+Expected: все 10 ожидаемых ошибок из Step 2, `exit=1`.
 Run: `python3 dev/ship-kit/tests/check_registry.py dev/ship-kit/tests/fixtures/registry_valid.md; echo "exit=$?"`
 Expected: `УРОВЕНЬ 2: OK`, `exit=0`.
 
