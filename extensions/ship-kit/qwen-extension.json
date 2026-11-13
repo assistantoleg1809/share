@@ -1,12 +1,12 @@
 {
   "name": "ship-kit",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "displayName": {
     "ru": "Ship Kit — скиллы конвейера «тикет → прод»",
     "en": "Ship Kit — ticket-to-pipeline skills"
   },
   "description": {
-    "ru": "8 скиллов конвейера «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление»: run (items-диспетчер «<тег> <задание>», план skill-runs, гейты человека, циклы до успеха), jobs (запуск/ожидание, гейт запуска), diagnosis и repair с командными файлами build|deploy (knowledge-пак, разные команды — разная эскалация), openspec, pr (PR внутри item, замечания — пушем в тот же PR), registry (md-реестр проектов, модель MCP-транспорта), adapt-kit (правила доработки). Скиллы работают только с MCP из аргументов вызова.",
-    "en": "8 skills for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop: run (items dispatcher \"<tag> <job>\", skill-runs plan, human gates, loops until success), jobs (launch/watch with launch gate), diagnosis and repair with per-team build|deploy knowledge files, openspec, pr (PR inside item, remark fixes pushed to the same PR), registry (md projects file, MCP transport model), adapt-kit (adaptation rules). Skills use only MCPs passed via call arguments."
+    "ru": "7 скиллов конвейера «Jira → OpenSpec → правки → PR → ревью → сборка → деплой → исправление» на стадийной модели: run (обход стадий по pipelineOrder, счётчики по id, карточки гейтов prepare→confirm→apply, loop guard, WAIT/resume), registry (yaml-реестр проектов: стадии, записи знания, servers, executors; миграции formatVersion), analyst (спека + правки кода), courier (ветка/PR/замечания), operator (запуск/ожидание джоб), doctor (диагноз diagnose + не-код фикс fix, командные файлы build|deploy), adapt-kit (правила доработки). Позиции исполнителей — манифест docs/ship-kit.positions.yaml; скиллы работают только с MCP из аргументов вызова.",
+    "en": "7 skills for the Jira → OpenSpec → code → PR → review → build → deploy → autofix loop on a stage model: run (pipelineOrder walk, per-stage counters, prepare→confirm→apply gate cards, loop guard, WAIT/resume), registry (yaml projects file: stages, knowledge records, servers, executors; formatVersion migrations), analyst (spec + code fixes), courier (branch/PR/review loop), operator (launch/watch), doctor (diagnose + non-code fix with per-kind knowledge files), adapt-kit (adaptation rules). Executor positions come from docs/ship-kit.positions.yaml; skills use only MCPs passed via call arguments."
   }
 }

@@ -1,149 +1,313 @@
-# Пример реестра проектов ship-kit (md)
+# Реестр проектов ship-kit (yaml) — схема и пример
 
-Реестр связывает скиллы комплекта с конкретным проектом: какие MCP-серверы
-использовать (alias → сервер), пути и точные названия джоб, jira-ключ,
-ssh-репо, КЭ, лимиты запусков.
+Реестр связывает конвейер с конкретным проектом: стадии (`pipelineOrder`),
+записи знания (alias → serverId, джобы, стенды), исполнители позиций
+(`executors`), серверы (`servers`), лимиты, политики.
 
-- **Файл реестра**: `ship-kit.projects.md` в корне проекта, либо центральный
-  `~/.qwen/ship-kit/projects.md` (на несколько проектов). Ищутся по цепочке
-  в этом порядке, работает первый найденный.
-- **Единственная точка ведения** — скилл `ship-kit:registry`: изменения и
-  добавление элементов реестра выполняются только через него.
-- **Скиллы-роли реестр не читают.** Основной агент (или человек) читает
-  реестр и передаёт скиллам значения **аргументами вызова**; скилл не знает
-  ни о файле, ни о проекте.
+- **Файл реестра**: `ship-kit.projects.yaml` в корне проекта, либо
+  центральный `~/.qwen/ship-kit/projects.yaml` (на несколько проектов).
+  Ищутся по цепочке в этом порядке, работает первый найденный.
+- **Единственная точка ведения** — скилл `ship-kit:registry`; при расхождении
+  `formatVersion` с комплектом registry проводит миграцию (дифф →
+  подтверждение → применение).
+- **Скиллы-исполнители реестр не читают.** Вызывающий (скилл `run` или
+  человек) читает реестр и передаёт исполнителям значения **аргументами
+  вызова**; исполнитель не знает ни о файле, ни о проекте.
+- **Позиции** (кто исполняет стадию) задаёт манифест комплекта
+  [ship-kit.positions.yaml](ship-kit.positions.yaml): набор позиций выводится
+  из `kind` стадии; реестр может только подменить исполнителя позиции
+  (`executors`) или сузить набор (`positions` у стадии).
 
 ## Формат
 
-Markdown, плоские строки `ключ: значение` внутри секций `## <имя проекта>`.
-Секция `## [default]` задаёт проект по умолчанию. Комментарии — строки
-начинающиеся с `#` внутри значения недопустимы (значение — вся строка после
-`ключ:`).
-
-### Ключи
+YAML. Верхний уровень:
 
 | Ключ | Обязателен | Смысл |
 |---|---|---|
-| `project` (в `[default]`) | нет | Имя проекта по умолчанию |
-| `jiraKey` | да | Jira-ключ проекта (префикс задач, напр. `PRJ`) |
-| `repoSsh` | да | ssh-репо для клона (`git@host:team/repo.git`) |
-| `ce` | да | КЭ — конфигурационный элемент: идентификатор объекта для обращений по МСП (например, МСП результатов проверок уязвимостей); передаётся скиллам аргументом |
-| `branchDefault` | нет | Ветка по умолчанию (args сильнее) |
-| `branch.task` / `branch.bug` | нет | Префикс шаблона рабочей ветки `<X>/<КЛЮЧ>` для задач/багов (дефолты `feature` / `bugfix`; явный шаблон в задании сильнее реестра) |
-| `fixRetries` | нет | Максимум кругов правок по замечаниям ПР (дефолт 3); замечания правятся пушем в тот же PR |
-| `runLimit.build` / `runLimit.deploy` | нет | Максимум попыток цикла сборки/деплоя за прогон (дефолты 3/2; `runLimit.deploy` — на стенд; args сильнее) |
-| `retryLimit` | нет | Повторов запуска без фикса и без нового гейта по flaky/таймауту (дефолт 1) |
-| `deploy.stands` | при `mcp-deploy.*` | Стенды деплоя — упорядоченный список из `DEV, ST, IFT, PSI` (канонический порядок); IFT и PSI обязательны в составе, DEV/ST опциональны |
-| `mcp-deploy.job.name.<СТЕНД>` | нет | Своя deploy-джоба на стенд (переопределяет `mcp-deploy.job.name`) |
-| `runBudget` | нет | Бюджет прогона в минутах (по исчерпании — честная остановка STOPPED_BUDGET) |
-| `context` | нет | Что за проект и его особенности (строка) |
-| `errorPolicy.notFixable` | нет | Категории триажа, при которых фикс не запускается (через запятую) |
-| `knowledge` | нет | Имя knowledge-пака — командных файлов ролей (дефолт `jenkins`; для другого CI — свой пак) |
-| `<alias>.server` | при использовании | Фактический id MCP-сервера в `settings.json → mcpServers`, на который отображается alias |
-| `<alias>.model` | нет | Модель MCP-транспорта для запуска: `jenkins` (дефолт; требует `job.path`+`job.name`) или `custom` (требует `launch.params`) |
-| `<alias>.launch.params` | для model=custom | Карта параметров запуска `k=v, k2=v2` — уходит в вызов запуска как есть |
-| `<alias>.tool.run` / `.tool.status` / `.tool.log` | нет | Точные имена инструментов MCP запуска/статуса/лога на сервере alias (не задано — роль ищет по описанию) |
-| `<alias>.job.path` | для mcp-build / mcp-deploy | Путь до джобы (папки CI) |
-| `<alias>.job.name` | для mcp-build / mcp-deploy | Точное название джобы — идёт скиллу аргументом |
-| `<alias>.projectKey` | для mcp-sonar | Ключ проекта в Sonar |
+| `formatVersion` | да | Версия формата (текущая — 1). Реестр новее комплекта — стоп «обновите комплект»; старее — миграция через registry |
+| `defaultProject` | нет | Проект по умолчанию |
+| `servers` | да (если есть endpoints) | serverId → описание; адреса/токены НЕ здесь, а в `settings.json → mcpServers` |
+| `executors` | нет | Позиция → скилл (дефолты — из манифеста; писать только подмены) |
+| `projects` | да | Список проектов |
 
-### Аliases (фиксированы комплектом)
+### Проект
 
-| Alias | Роль | Используют скиллы |
+| Ключ | Обязателен | Смысл |
 |---|---|---|
-| `mcp-build` | CI-сервер сборки | jobs (kind=build), diagnosis, repair |
-| `mcp-deploy` | CI-сервер деплоя | jobs (kind=deploy), diagnosis, repair |
-| `mcp-sonar` | Качество/уязвимости (Sonar) | diagnosis, repair |
-| `mcp-jira` | Задачи (Jira) | openspec, pr, diagnosis, repair |
-| `mcp-confluence` | Документация (Confluence) | openspec, diagnosis, repair |
-| `mcp-bitbucket` | Репозиторий/PR (Bitbucket) | pr, diagnosis, repair |
-| `mcp-mmap` | Схемы/знания (mmap) | openspec |
+| `projectKey` | да | Короткий slug проекта |
+| `jiraProjectKey` | да | Префикс задач Jira (тег прогона матчится по нему) |
+| `repoSshUrl` | да | ssh-репо (`git@host:team/repo.git`) |
+| `artifactId` | да | КЭ — идентификатор для обращений по МСП |
+| `defaultBranch` | нет | Целевая ветка (пуш в неё запрещён; args сильнее) |
+| `branchPrefix` | нет | `{task: feature, bug: bugfix}` — шаблон рабочей ветки `<X>/<КЛЮЧ>` |
+| `description` | нет | Что за проект |
+| `limits` | нет | `maxRuns` (на стадию; деплой — на стенд), `maxRetries` (дефолт 1 — повтор flaky без гейта), `maxFixAttempts` (дефолт 3 — кругов «фикс → PR → MERGED → перезапуск»), `totalRunBudget` (минуты, заморожен в ожидании) |
+| `errorPolicy` | нет | `unfixableCategories` — категории, при которых фикс-стадия не вызывается вовсе (вето поверх диагноза) |
+| `pipelineOrder` | нет | Порядок обхода не-фикс стадий; дефолт `[do, build, deploy]` ∩ существующие |
+| `stages` | да | Стадии (ниже) |
+| `knowledge` | да | Записи знания (ниже) |
 
-Один физический сервер может закрывать несколько alias (например,
-`mcp-build.server` и `mcp-deploy.server` — один id). Отсутствие alias-записи
-= «в проекте этого MCP нет»: вызывающий обязан не передавать его скиллам,
-а не подменять молча.
+### Стадия
 
-### Модели MCP-транспорта (валидация по модели)
-
-Модель задаёт, какие ключи реестра обязательны для операции запуска
-(валидация — скилл `registry` при ведении файла и валидатор уровня 2
-`check_registry.py`):
-
-| Модель | Обязательные ключи | Смысл |
+| Ключ | Обязателен | Смысл |
 |---|---|---|
-| `jenkins` (дефолт) | `<alias>.job.path` + `<alias>.job.name` (+ `mcp-deploy.job.name.<СТЕНД>` для стендов) | запуск = джоба в папке Jenkins по имени |
-| `custom` | `<alias>.launch.params` | произвольная карта `k=v, k2=v2` — уходит в вызов запуска как есть (любой не-Jenkins транспорт, пока для него не заведена именованная модель) |
+| `id` | да | Уникален в проекте; счётчики и план ключуются им |
+| `kind` | да | `DO` \| `BUILD` \| `DEPLOY` \| `FIX_DO` \| `FIX_BUILD` \| `FIX_DEPLOY`; kind задаёт набор позиций (манифест) и производный kind транспорта (build/deploy) |
+| `positions` | нет | Сужение набора позиций kind (только подмножество) |
+| `knowledgeRef` | да | Запись знания исполнителей стадии |
+| `diagnosisRef` | нет | Запись диагноста (только BUILD/DEPLOY; дефолт `knowledgeRef`) |
+| `repairRef` | нет | Запись ремонта (только FIX_BUILD/FIX_DEPLOY; дефолт `knowledgeRef`) |
+| `nextStageId` | обязателен у FIX_* | Куда после MERGED (fixDeploy → build: пересборка) |
+| `fixesStageId` | обязателен у FIX_* | Какую стадию чинит |
+| `triggeredBy` | только у FIX_DO | `pullRequestReview` (PR открыт — правка в тот же PR) \| `humanDirective` (PR уже MERGED — переделка по команде человека, правка новым PR) |
+| `pullRequestOwner` | нет | Позиция-владелец PR стадии (обычно `courier`); отсутствие при правящем репозиторий исполнителе — предупреждение |
+| `limits` | нет | Лимиты на стадию (переопределяют проектные) |
 
-Пример custom (не-Jenkins транспорт):
+Исполнители **не перечисляются в стадии**: набор позиций выводится из `kind`.
 
-```markdown
-mcp-build.server: gitlab-ci
-mcp-build.model: custom
-mcp-build.launch.params: project=team/calc, ref=main
-mcp-build.tool.run: trigger_pipeline
-```
+### Запись знания
 
-Модель вне {jenkins, custom} — ошибка валидации. Значения модели уходят
-скиллам аргументами вызова (как и всё из реестра) — тела скиллов остаются
-транспортно-нейтральными.
+`knowledge: [{id, endpoints: [...]}]`. Запись обязана покрывать всех
+исполнителей своей стадии. Endpoint:
+
+| Ключ | Обязателен | Смысл |
+|---|---|---|
+| `alias` | да | Закрытый набор: `MCP_BUILD`, `MCP_DEPLOY`, `MCP_SONAR`, `MCP_JIRA`, `MCP_CONFLUENCE`, `MCP_BITBUCKET`, `MCP_MAPP` |
+| `serverId` | да | id подключения из `settings.json → mcpServers` (описан в `servers:`) |
+| `runnerKind` | для транспорта | `JENKINS` → обязательны `jobFolder`+`jobName`; `CUSTOM` → `jobParameters` (карта), `jobFolder`/`jobName` запрещены |
+| `jobFolder` / `jobName` | см. runnerKind | Путь и точное название джобы |
+| `environments` | при MCP_DEPLOY со стендами | Непустой список из `DEV, ST, IFT, PSI` в каноническом порядке |
+| `environmentJobNames` | нет | Своя джоба на стенд (ключи из `environments`) |
+| `jobParameters` | для CUSTOM | Карта параметров запуска (уходит как есть) |
+| `projectKey` | для MCP_SONAR | Ключ проекта в Sonar |
+| `toolNames` | нет | `{run, status, log}` — точные имена инструментов MCP (не задано — исполнитель ищет по описанию) |
+
+Правила записей-потребителей: `diagnosisRef` обязан содержать транспортный
+alias стадии с теми же `jobFolder`/`jobName` (иначе лог нечем читать / не та
+джоба — ошибка валидации) и может добавлять sonar/jira/confluence;
+`repairRef` — ровно один транспортный alias (отличие джобы от `knowledgeRef`
+— замысел: упавшая вместо быстрой ci). Отсутствие alias в записях проекта =
+«в этом проекте этого MCP нет» — вызывающий не передаёт его исполнителям.
 
 ## Пример целиком
 
-```markdown
-# Реестр проектов ship-kit
+```yaml
+# Реестр проектов ship-kit. Ведётся только скиллом ship-kit:registry.
+formatVersion: 1
+defaultProject: calc
 
-<!-- Ведётся только через скилл ship-kit:projects. Скиллы-роли этот файл
-     не читают: значения уходят им аргументами вызова. -->
+servers:
+  jenkins-conf:    CI сборки и деплоя calc (Jenkins)
+  jira-corp:       задачи Jira
+  confluence-corp: документация и runbook'и
+  bitbucket-corp:  репозитории и PR
+  sonar-corp:      качество/уязвимости
+  mapp-team:       схемы/знания (mmap)
 
-## [default]
-project: calc
+# executors: все позиции на дефолтах комплекта — секцию не пишем.
+  # Подмена в конкретном проекте — одной строкой:
+  # mechanic: superpowers:refactoring
 
-## calc
-jiraKey: PRJ
-repoSsh: git@git.corp:team/calc.git
-ce: CALC-APP
-branchDefault: main
-branch.task: feature
-branch.bug: bugfix
-context: Калькулятор, EFS-деплой, длинные сборки (~40 мин)
-errorPolicy.notFixable: infra, sonar
-runBudget: 90
-mcp-build.server: jenkins-conf
-mcp-build.job.path: folder/team
-mcp-build.job.name: calc-app
-mcp-deploy.server: jenkins-conf
-mcp-deploy.job.path: folder/team
-mcp-deploy.job.name: calc-app-deploy
-deploy.stands: DEV, ST, IFT, PSI
-retryLimit: 1
-mcp-sonar.server: sonar-corp
-mcp-sonar.projectKey: corp-calc
-mcp-jira.server: jira-corp
-mcp-confluence.server: confluence-corp
-mcp-bitbucket.server: bitbucket-corp
-mcp-mmap.server: mmap-team
-runLimit.build: 3
-runLimit.deploy: 2
+projects:
+  - projectKey: calc
+    jiraProjectKey: PRJ
+    repoSshUrl: git@git.corp:team/calc.git
+    artifactId: CALC-APP
+    defaultBranch: main
+    branchPrefix: { task: feature, bug: bugfix }
+    description: Калькулятор, длинные сборки (~40 мин)
+    limits: { maxRuns: 3, maxRetries: 1, maxFixAttempts: 2, totalRunBudget: 90 }
+    errorPolicy: { unfixableCategories: [infra, sonar] }
+    pipelineOrder: [do, build, deploy]
 
-## billing
-jiraKey: BIL
-repoSsh: git@git.corp:team/billing.git
-ce: BILLING-CORE
-branchDefault: develop
-context: Биллинг, деплоя нет, сборка + sonar, защищённая ветка — все фиксы через ПР
-fixRetries: 2
-mcp-build.server: jenkins-corp
-mcp-build.job.path: folder/billing
-mcp-build.job.name: billing-build
-mcp-sonar.server: sonar-corp
-mcp-sonar.projectKey: corp-billing
-mcp-jira.server: jira-corp
-mcp-confluence.server: confluence-corp
-mcp-bitbucket.server: bitbucket-corp
-runLimit.build: 2
+    stages:
+      - id: do
+        kind: DO
+        knowledgeRef: do-context
+        pullRequestOwner: courier
+      - id: build
+        kind: BUILD
+        knowledgeRef: build-ci
+        diagnosisRef: build-diagnosis
+        limits: { maxRuns: 3 }
+      - id: deploy
+        kind: DEPLOY
+        knowledgeRef: deploy-cd
+        diagnosisRef: deploy-diagnosis
+        limits: { maxRuns: 2 }        # на каждый стенд
+      - id: fixDo
+        kind: FIX_DO
+        knowledgeRef: fixdo-context
+        nextStageId: do
+        fixesStageId: do
+        triggeredBy: pullRequestReview
+        pullRequestOwner: courier
+      - id: fixBuild
+        kind: FIX_BUILD
+        knowledgeRef: fixbuild-ci
+        repairRef: fixbuild-repair
+        nextStageId: build
+        fixesStageId: build
+        pullRequestOwner: courier
+      - id: fixDeploy
+        kind: FIX_DEPLOY
+        knowledgeRef: fixdeploy-cd
+        repairRef: fixdeploy-repair
+        nextStageId: build            # MERGED → сначала пересборка
+        fixesStageId: deploy
+        pullRequestOwner: courier
+
+    knowledge:
+      - id: do-context                # analyst (jira/confluence/mapp) + courier (bitbucket)
+        endpoints:
+          - { alias: MCP_JIRA, serverId: jira-corp }
+          - { alias: MCP_CONFLUENCE, serverId: confluence-corp }
+          - { alias: MCP_MAPP, serverId: mapp-team }
+          - { alias: MCP_BITBUCKET, serverId: bitbucket-corp }
+      - id: build-ci                  # сама сборка — только транспорт запуска
+        endpoints:
+          - alias: MCP_BUILD
+            serverId: jenkins-conf
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: calc-app
+            toolNames: { run: jenkins_trigger_build, status: jenkins_get_build, log: jenkins_search_build_log }
+      - id: build-diagnosis           # diagnosisRef: транспорт стадии + sonar/jira/confluence
+        endpoints:
+          - alias: MCP_BUILD
+            serverId: jenkins-conf
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: calc-app
+          - { alias: MCP_SONAR, serverId: sonar-corp, projectKey: corp-calc }
+          - { alias: MCP_JIRA, serverId: jira-corp }
+          - { alias: MCP_CONFLUENCE, serverId: confluence-corp }
+      - id: deploy-cd
+        endpoints:
+          - alias: MCP_DEPLOY
+            serverId: jenkins-conf
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: calc-app-deploy
+            environments: [DEV, ST, IFT, PSI]
+            environmentJobNames: { IFT: calc-app-deploy-ift }
+      - id: deploy-diagnosis
+        endpoints:
+          - alias: MCP_DEPLOY
+            serverId: jenkins-conf
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: calc-app-deploy
+            environments: [DEV, ST, IFT, PSI]
+          - { alias: MCP_JIRA, serverId: jira-corp }
+          - { alias: MCP_CONFLUENCE, serverId: confluence-corp }
+      - id: fixdo-context             # mmap не нужен: фикс идёт по замечаниям PR
+        endpoints:
+          - { alias: MCP_JIRA, serverId: jira-corp }
+          - { alias: MCP_CONFLUENCE, serverId: confluence-corp }
+          - { alias: MCP_BITBUCKET, serverId: bitbucket-corp }
+      - id: fixbuild-ci               # оформление правки: быстрая ci-джоба + sonar/jira/bitbucket
+        endpoints:
+          - alias: MCP_BUILD
+            serverId: jenkins-conf
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: calc-app-ci
+            jobParameters: { SKIP_TESTS: "true", MODE: fast }
+          - { alias: MCP_SONAR, serverId: sonar-corp, projectKey: corp-calc }
+          - { alias: MCP_JIRA, serverId: jira-corp }
+          - { alias: MCP_BITBUCKET, serverId: bitbucket-corp }
+      - id: fixdeploy-cd
+        endpoints:
+          - alias: MCP_DEPLOY
+            serverId: jenkins-conf
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: calc-app-deploy
+            environments: [DEV, ST, IFT, PSI]
+          - { alias: MCP_JIRA, serverId: jira-corp }
+          - { alias: MCP_BITBUCKET, serverId: bitbucket-corp }
+      - id: fixbuild-repair           # repairRef: УПАВШАЯ сборка, не быстрая ci
+        endpoints:
+          - alias: MCP_BUILD
+            serverId: jenkins-conf
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: calc-app
+      - id: fixdeploy-repair          # repairRef: карта стендов для чтения лога
+        endpoints:
+          - alias: MCP_DEPLOY
+            serverId: jenkins-conf
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: calc-app-deploy
+            environments: [DEV, ST, IFT, PSI]
+            environmentJobNames: { IFT: calc-app-deploy-ift }
+
+  # Проект БЕЗ деплоя: нет стадий DEPLOY/FIX_DEPLOY и записей с MCP_DEPLOY —
+  # ступень деплоя не планируется вовсе. do без courier: PR вне стадии
+  # не оформляется (валидатор предупредит о fixBuild без pullRequestOwner).
+  - projectKey: billing
+    jiraProjectKey: BIL
+    repoSshUrl: git@git.corp:team/billing.git
+    artifactId: BILLING-CORE
+    defaultBranch: develop
+    description: Биллинг, деплоя нет, сборка + sonar
+    limits: { maxRuns: 2, maxRetries: 1, maxFixAttempts: 2 }
+    pipelineOrder: [do, build]
+    stages:
+      - id: do
+        kind: DO
+        positions: [analyst]          # courier нет: PR стадией не оформляется
+        knowledgeRef: billing-do
+      - id: build
+        kind: BUILD
+        knowledgeRef: billing-build-ci
+        diagnosisRef: null            # явный дефолт: диагност читает knowledgeRef
+        limits: { maxRuns: 2 }
+      - id: fixDo
+        kind: FIX_DO
+        knowledgeRef: billing-fixdo
+        nextStageId: do
+        fixesStageId: do
+        triggeredBy: pullRequestReview
+      - id: fixBuild
+        kind: FIX_BUILD
+        knowledgeRef: billing-fixbuild-ci
+        repairRef: null               # явный дефолт: ремонт читает knowledgeRef
+        nextStageId: build
+        fixesStageId: build
+    knowledge:
+      - id: billing-do
+        endpoints:
+          - { alias: MCP_JIRA, serverId: jira-corp }
+          - { alias: MCP_CONFLUENCE, serverId: confluence-corp }
+      - id: billing-build-ci
+        endpoints:
+          - alias: MCP_BUILD
+            serverId: jenkins-corp
+            runnerKind: JENKINS
+            jobFolder: folder/billing
+            jobName: billing-build
+          - { alias: MCP_SONAR, serverId: sonar-corp, projectKey: corp-billing }
+          - { alias: MCP_JIRA, serverId: jira-corp }
+      - id: billing-fixdo
+        endpoints:
+          - { alias: MCP_JIRA, serverId: jira-corp }
+          - { alias: MCP_CONFLUENCE, serverId: confluence-corp }
+          - { alias: MCP_BITBUCKET, serverId: bitbucket-corp }
+      - id: billing-fixbuild-ci
+        endpoints:
+          - alias: MCP_BUILD
+            serverId: jenkins-corp
+            runnerKind: JENKINS
+            jobFolder: folder/billing
+            jobName: billing-build
+          - { alias: MCP_SONAR, serverId: sonar-corp, projectKey: corp-billing }
+          - { alias: MCP_JIRA, serverId: jira-corp }
+          - { alias: MCP_BITBUCKET, serverId: bitbucket-corp }
 ```
 
-Обратите внимание на `billing`: нет `mcp-deploy.*` (деплой-ступень
-пропускается целиком) и нет `mcp-mmap.server` (openspec работает без mmap,
-не запрашивая его).
+Обратите внимание: у `billing` сервер `jenkins-corp` должен быть описан в
+`servers:` (в примере выше опущен для краткости — в реальном файле обязателен:
+каждый serverId из endpoints описан, каждый описанный используется).

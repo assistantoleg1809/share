@@ -1,0 +1,70 @@
+# negtest-фикстура: ожидаемые ошибки валидатора (≥6)
+formatVersion: 7
+
+servers:
+  jira-corp: задачи Jira
+  unused-server: нигде не используется
+
+executors:
+  wizard: ship-kit:unknown-skill
+
+projects:
+  - projectKey: broken
+    jiraProjectKey: BRK
+    repoSshUrl: git@git.corp:team/broken.git
+    artifactId: BRK-1
+    pipelineOrder: [do, build, ghostStage]
+    stages:
+      - id: do
+        kind: DO
+        knowledgeRef: do-rec
+        triggeredBy: pullRequestReview
+      - id: build
+        kind: BUILD
+        knowledgeRef: build-rec
+        diagnosisRef: diag-rec
+      - id: fixBuild
+        kind: FIX_BUILD
+        knowledgeRef: fixbuild-rec
+        repairRef: repair-rec
+        fixesStageId: buld
+    knowledge:
+      - id: do-rec
+        endpoints:
+          - { alias: MCP_JIRA, serverId: jira-corp }
+          - { alias: MCP_NINJA, serverId: jira-corp }
+      - id: build-rec
+        endpoints:
+          - alias: MCP_BUILD
+            serverId: jenkins-ghost
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: broken-app
+      - id: diag-rec
+        endpoints:
+          - alias: MCP_BUILD
+            serverId: jenkins-ghost
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: broken-app-OTHER
+          - { alias: MCP_JIRA, serverId: jira-corp }
+      - id: fixbuild-rec
+        endpoints:
+          - { alias: MCP_JIRA, serverId: jira-corp }
+      - id: repair-rec
+        endpoints:
+          - alias: MCP_BUILD
+            serverId: jenkins-ghost
+            runnerKind: CUSTOM
+            jobFolder: folder/team
+            jobName: nope
+            jobParameters: { A: "1" }
+          - { alias: MCP_JIRA, serverId: jira-corp }
+      - id: stands-rec
+        endpoints:
+          - alias: MCP_DEPLOY
+            serverId: jenkins-ghost
+            runnerKind: JENKINS
+            jobFolder: folder/team
+            jobName: broken-deploy
+            environments: [PSI, DEV]

@@ -1,0 +1,86 @@
+# Манифест позиций ship-kit — словарь исполнителей конвейера.
+#
+# Позиция = именованный слот: контракт исполнителя + тип + версия. Скиллы
+# комплекта пишутся под контракт; проект подменяет исполнителя позиции в
+# `executors:` своего реестра (ship-kit.projects.yaml), не трогая стадии.
+#
+# Правила: комплект исполнителей не подбирает сам (trust discovery-only);
+# смена словаря = formatVersion++ реестра + миграция (docs/ship-kit.md).
+version: 1
+
+positions:
+  analyst:
+    description: >-
+      Спека и правки кода: контекст задачи (Jira/Confluence/mmap), оформление
+      OpenSpec-изменения, реализация tasks.md, код-фиксы по замечаниям ревью
+      и диагнозу.
+    type: executor
+    contract:
+      step0: проверить переданные MCP лёгкими вызовами; недоступен — блок ошибки и стоп
+      report: "OK · CHANGE(<id>) · BRANCH · GATE · SUMMARY"
+      gates: ask-таблица из SKILL.md (чтение — allow; необратимое — не у него: пуш/PR делает courier)
+
+  courier:
+    description: >-
+      Доставка кода: рабочая ветка `<X>/<КЛЮЧ>`, атомарные коммиты, PR,
+      цикл замечаний (пуш в тот же PR; новый PR — только на новый фикс).
+    type: executor
+    contract:
+      step0: проверить переданные mcp-jira и mcp-bitbucket; git-каталог чистый, работа в ветке/worktree
+      report: "OK · WORKTREE · BRANCH · PRID · PRURL · GATE"
+      gates: ask-таблица (пуш и создание PR — ask · всегда, одной карточкой)
+
+  operator:
+    description: Запуск и наблюдение джоб CI (kind=build|deploy, стенды).
+    type: executor
+    contract:
+      step0: убедиться, что инструмент режима есть на переданном сервере
+      report: "запуск: ok/kind/stand/number/url/gate · ожидание: state/kind/number/errorSnippet/logTail/eta/possiblyStuck"
+      gates: ask-таблица (запуск — ask · всегда; ожидание/лог — allow; flaky-повтор наследует только идентичную карточку)
+
+  detective:
+    description: >-
+      Диагноз падения джобы (служебная позиция: вызывает run между падением
+      стадии и выбором фикс-стадии; не входит в наборы стадий).
+    type: executor
+    contract:
+      step0: проверить переданные MCP (транспорт стадии + jira/confluence/sonar при наличии)
+      report: "category · rootCause · fixable · fixHint · knownIssues · confidence"
+      gates: ask-таблица (только чтение; правки запрещены)
+
+  mechanic:
+    description: >-
+      Не-код фикс по диагнозу: минимальная правка репозитория, локальная
+      проверка (красный → правка → зелёный), коммит, 🔒 карточка пуша, push.
+    type: executor
+    contract:
+      step0: проверить переданный транспорт (сверка лога упавшей джобы); git — рабочая ветка, каталог чистый
+      report: "OK · COMMIT · BRANCH · PUSHED · GATE · SUMMARY · WORKTREE"
+      gates: ask-таблица (пуш — ask · всегда; чтение лога — allow)
+
+# Дефолтные наборы позиций по kind стадии.
+# Поле `positions` у стадии может только сузить набор (подмножество).
+kindPositions:
+  DO:         [analyst, courier]
+  BUILD:      [operator]
+  DEPLOY:     [operator]
+  FIX_DO:     [analyst, courier]
+  FIX_BUILD:  [analyst, mechanic, courier]   # mechanic можно срезать: positions: [analyst, courier]
+  FIX_DEPLOY: [mechanic, courier]
+
+# Маршрутизация «категория диагноза → позиция» для фикс-стадий (по kind).
+# Не универсальное правило: у FIX_DEPLOY любое fixable ведёт mechanic
+# (наследник v1 `fix-deploy: repair`).
+fixRouting:
+  FIX_DO:     { code: analyst }              # вход — triggeredBy (замечания PR / команда человека)
+  FIX_BUILD:  { code: analyst, noncode: mechanic }
+  FIX_DEPLOY: { anyFixable: mechanic }
+
+# Дефолтные исполнители позиций — соответствуют скиллам комплекта.
+# Проект может подменить любую позицию в `executors:` реестра.
+defaults:
+  analyst:   ship-kit:analyst
+  courier:   ship-kit:courier
+  operator:  ship-kit:operator
+  detective: ship-kit:doctor   # режим diagnose
+  mechanic:  ship-kit:doctor   # режим fix
