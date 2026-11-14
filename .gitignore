@@ -1,6 +1,0 @@
-.qwen/tmp/
-.qwen/autonomous-worker/
-.qwen/ship-kit/runs/
-openspec/changes/*/run-*.json
-dev/e2e/bare.git/
-dev/e2e/e2e-run/
