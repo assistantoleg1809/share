@@ -83,6 +83,14 @@ mkdirSync(join(sb, '.qwen'));
 const srv = (role) => ({ command: 'node', args: [mock, role], env: { MOCK_STATE: join(sb, 'mcp-state.json') } });
 writeFileSync(join(sb, '.qwen/settings.json'), JSON.stringify({
   mcpServers: { jira: srv('jira'), wiki: srv('confluence'), bb: srv('bitbucket'), jenkins: srv('jenkins') },
+  permissions: { allow: [
+    'Bash(git checkout *)', 'Bash(git log *)', 'Bash(git status *)',
+    'Bash(openspec *)', 'Bash(node *)', 'Bash(true)',
+    'mcp__jira__get_issue', 'mcp__jira__search_issues',
+    'mcp__wiki__search_pages', 'mcp__wiki__get_page',
+    'mcp__bb__get_repo_info', 'mcp__bb__list_prs', 'mcp__bb__create_pr', 'mcp__bb__get_pr', 'mcp__bb__add_comment', 'mcp__bb__resolve_comment',
+    'mcp__jenkins__jenkins_get_build', 'mcp__jenkins__jenkins_search_build_log', 'mcp__jenkins__jenkins_trigger_build',
+  ] },
 }, null, 2));
 
 writeFileSync(join(sb, 'mcp-state.json'), JSON.stringify({
