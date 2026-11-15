@@ -35,7 +35,7 @@ writeFileSync(join(sb, 'ship-kit.projects.md'), `# Файл проектов —
 
 ## MCP-серверы (alias = значение аргумента вызова)
 
-- mcp-jira = jira · mcp-confluence = wiki · mcp-bitbucket = bb
+- mcp-tracker = jira · mcp-docs = wiki · mcp-repo = bb
 - mcp-build = jenkins · mcp-deploy = jenkins
 
 ## Джобы CI

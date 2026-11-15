@@ -13,8 +13,8 @@ flowchart LR
 ## Вызовы
 
 ```
-/ship-kit:task PRJ-42 добавь экспорт CSV, mcp-jira=jira-corp, mcp-confluence=wiki, mcp-mmap=maps
-/ship-kit:pr отправь на ревью, mcp-bitbucket=bb
+/ship-kit:task PRJ-42 добавь экспорт CSV, mcp-tracker=jira-corp, mcp-docs=wiki
+/ship-kit:pr отправь на ревью, mcp-repo=bb
 /ship-kit:ci запусти сборку export-build, mcp-build=jenkins-corp
 ```
 
