@@ -120,7 +120,8 @@ writeFileSync(join(sb, 'mcp-state.json'), JSON.stringify({
   bitbucket: { autoMerge: false, prs: {}, counter: 0 },
 }, null, 1));
 
-execSync('git init -q -b main && git add -A && git -c user.email=case2@mock -c user.name=case2 commit -qm "init: reports (PRJ-705)"', { cwd: sb });
+writeFileSync(join(sb, '.gitignore'), '.origin/\n');
+execSync(`git init -q -b main && git add -A && git -c user.email=case2@mock -c user.name=case2 commit -qm "init: reports (PRJ-705)" && git init -q -b main .origin && git remote add origin "${sb}/.origin" && git push -q -u origin main`, { cwd: sb });
 
 // минимальный openspec-корень (эквивалент init, без интерактива)
 mkdirSync(join(sb, 'openspec'), { recursive: true });

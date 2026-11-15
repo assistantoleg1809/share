@@ -87,5 +87,6 @@ writeFileSync(join(sb, 'mcp-state.json'), JSON.stringify({
   bitbucket: {},
 }, null, 1));
 
-execSync('git init -q -b main && git add -A && git -c user.email=live@mock -c user.name=live commit -qm "init: calc (PRJ-700)"', { cwd: sb });
+writeFileSync(join(sb, '.gitignore'), '.origin/\n');
+execSync(`git init -q -b main && git add -A && git -c user.email=live@mock -c user.name=live commit -qm "init: calc (PRJ-700)" && git init -q -b main .origin && git remote add origin "${sb}/.origin" && git push -q -u origin main`, { cwd: sb });
 console.log(sb);
