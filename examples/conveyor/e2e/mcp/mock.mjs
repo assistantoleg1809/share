@@ -10,7 +10,7 @@ const statePath = process.env.MOCK_STATE || new URL('./state.json', import.meta.
 const load = () => (existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {});
 const save = (s) => writeFileSync(statePath, JSON.stringify(s, null, 1));
 
-const LOGS = {
+const BASE_LOGS = {
   FAIL_CODE: {
     snippet: 'SyntaxError: invalid syntax (app.py, line 19)',
     tail: '[compile] python -m py_compile app.py\n  File "app.py", line 19\n    def div(a, b)\n                  ^\nSyntaxError: invalid syntax\n[build] step compile failed (exit 1)',
@@ -30,6 +30,8 @@ const LOGS = {
 };
 
 const ok = (msg, id) => ({ jsonrpc: '2.0', id, result: msg });
+// Логи падений можно перекрывать из state: s.jenkins.logs[<имя исхода>]
+const logs = (s) => ({ ...BASE_LOGS, ...((s.jenkins && s.jenkins.logs) || {}) });
 const text = (id, v) => ({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: typeof v === 'string' ? v : JSON.stringify(v) }] } });
 
 function jenkinsTools() {
@@ -57,13 +59,13 @@ function jenkinsTools() {
         s.jenkins.polls[n] = (s.jenkins.polls[n] || 0) + 1; save(s);
         if (s.jenkins.polls[n] === 1) return { state: 'RUNNING', number: n, url: `http://jenkins.mock/job/${b.job}/${n}` };
         const st = terminal(b.result);
-        return { state: st, number: n, url: `http://jenkins.mock/job/${b.job}/${n}`, errorSnippet: st === 'FAILURE' ? (LOGS[b.result]?.snippet || 'failure') : undefined };
+        return { state: st, number: n, url: `http://jenkins.mock/job/${b.job}/${n}`, errorSnippet: st === 'FAILURE' ? (logs(s)[b.result]?.snippet || 'failure') : undefined };
       } },
     { name: 'jenkins_search_build_log', desc: 'Хвост лога запуска по номеру: первая ошибка и последние строки',
       run: (a) => {
         const s = load(); const n = String(a.number ?? a.build ?? a.buildNumber);
         const b = (s.jenkins.byNum || {})[n] || { result: 'SUCCESS' };
-        const l = LOGS[b.result];
+        const l = logs(s)[b.result];
         return { number: n, state: terminal(b.result), errorSnippet: l ? l.snippet : null, logTail: l ? l.tail : '[build] all steps passed (exit 0)' };
       } },
   ];
