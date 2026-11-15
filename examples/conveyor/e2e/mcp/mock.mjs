@@ -107,6 +107,23 @@ function roleTools() {
     default: return [];
   }
 }
+// inputSchema инструментов (объявляются клиенту; логика принимает аргументы как есть)
+const SCHEMAS = {
+  jenkins_trigger_build: { job: { type: 'string' }, jobName: { type: 'string' }, params: { type: 'object' } },
+  jenkins_get_build: { number: { type: 'number' }, build: { type: 'number' }, buildNumber: { type: 'number' } },
+  jenkins_search_build_log: { number: { type: 'number' }, build: { type: 'number' }, buildNumber: { type: 'number' } },
+  search_issues: { query: { type: 'string' }, text: { type: 'string' }, jql: { type: 'string' } },
+  get_issue: { key: { type: 'string' }, issueKey: { type: 'string' }, id: { type: 'string' } },
+  get_page: { title: { type: 'string' }, pageTitle: { type: 'string' } },
+  search_pages: {},
+  quality_gate: {},
+  list_prs: {},
+  create_pr: { branch: { type: 'string' }, source: { type: 'string' }, base: { type: 'string' }, target: { type: 'string' }, title: { type: 'string' }, description: { type: 'string' } },
+  get_pr: { id: { type: 'string' }, prId: { type: 'string' }, pr: { type: 'string' } },
+  add_comment: { id: { type: 'string' }, prId: { type: 'string' }, pr: { type: 'string' }, text: { type: 'string' }, body: { type: 'string' } },
+  resolve_comment: { id: { type: 'string' } },
+  get_repo_info: {},
+};
 const TOOLS = roleTools();
 
 let buf = '';
@@ -120,7 +137,7 @@ process.stdin.on('data', (d) => {
 });
 function handle(msg) {
   if (msg.method === 'initialize') return process.stdout.write(JSON.stringify(ok({ protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: `${role}-mock`, version: '1.0' } }, msg.id)) + '\n');
-  if (msg.method === 'tools/list') return process.stdout.write(JSON.stringify(ok({ tools: TOOLS.map((t) => ({ name: t.name, description: t.desc, inputSchema: { type: 'object', properties: {} } })) }, msg.id)) + '\n');
+  if (msg.method === 'tools/list') return process.stdout.write(JSON.stringify(ok({ tools: TOOLS.map((t) => ({ name: t.name, description: t.desc, inputSchema: { type: 'object', properties: SCHEMAS[t.name] || {} } })) }, msg.id)) + '\n');
   if (msg.method === 'tools/call') {
     const t = TOOLS.find((x) => x.name === msg.params?.name);
     let out;

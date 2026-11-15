@@ -61,6 +61,8 @@ ship-kit файл не читают.
 
 ## Конвенции спеки — правила проекта (применяются всегда, без напоминания)
 
+- **Спека обязательна**: каждая задача оформляется изменением до кода
+  (лёгкого пути без спеки в этом проекте нет).
 - Инструмент спекирования проекта — **openspec-скилл** из списка
   скиллов сессии (например openspec-propose); при нескольких
   кандидатах спекирования выбирается openspec-скилл.
@@ -68,6 +70,8 @@ ship-kit файл не читают.
   (родительская сторь и название — из jira по ключу задачи);
   артефакты изменения — \`openspec/changes/<имя>/\`.
 - Реализация идёт по чек-листу tasks.md изменения.
+- Аргументы вызовов скиллов (mcp-*) агент берёт из этого файла —
+  называть их в задании не нужно.
 
 ## Известные особенности стендов
 
@@ -109,4 +113,9 @@ writeFileSync(join(sb, 'mcp-state.json'), JSON.stringify({
 }, null, 1));
 
 execSync('git init -q -b main && git add -A && git -c user.email=case2@mock -c user.name=case2 commit -qm "init: reports (PRJ-705)"', { cwd: sb });
+
+// минимальный openspec-корень (эквивалент init, без интерактива)
+mkdirSync(join(sb, 'openspec'), { recursive: true });
+writeFileSync(join(sb, 'openspec/config.yaml'), 'schema: spec-driven\n');
+writeFileSync(join(sb, 'openspec/project.md'), '# reports — песочница кейса-2 demo-project\n');
 console.log(sb);
