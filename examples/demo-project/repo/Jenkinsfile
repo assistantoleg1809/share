@@ -1,0 +1,10 @@
+// Учебная джоба calc-app (build) — иллюстрация для walkthrough README.
+// Реальный CI проекта живёт в git.corp/team/calc; здесь — только форма.
+pipeline {
+  agent any
+  stages {
+    stage('test') {
+      steps { sh 'node app.test.js' }
+    }
+  }
+}
