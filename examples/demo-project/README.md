@@ -31,6 +31,12 @@
 | джоба `calc-app-deploy`, порядок DEV→ST→IFT→PSI | карточки запуска deploy |
 | базовая `main`; ветки `feature/<КЛЮЧ>` | целевая ветка карточки pr; имя ветки |
 | «Известные проблемы»: DEVOPS-311, runbook | источник диагноза ci при падении ST |
+| Репозиторий `git@git.corp:team/calc.git` | сессия вне `repo/` → task клонирует и работает в клоне |
+
+Два представления конвенции: этот файл — мастер записи calc; общая
+картина команды — центральный каталог-индекс
+[../central-catalog](../central-catalog/README.md) (каскад: репо-файл
+сильнее каталога).
 
 ## Шаг 1 — `/ship-kit:task PRJ-777 …, mcp-jira=jira-corp, mcp-confluence=wiki-corp, mcp-bitbucket=bb`
 
