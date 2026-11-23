@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ship-kit — схема прогона</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;padding:1.5rem;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.45;color:#1a1a1a;background:#fff}
+  .wrap{max-width:880px;margin:0 auto;padding:24px 18px 44px;font-size:16.5px;color:#1e293b}
+  .wrap h1{font-size:25px;margin:0 0 4px}
+  .sub{color:#64748b;margin:0 0 20px;font-size:15px}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
+  .lg{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:13.5px;font-weight:600;border:2px solid}
+  .lg.human{background:#e8f2ff;border-color:#3b82f6;color:#1d4ed8}
+  .lg.gate{background:#fff7e6;border-color:#f59e0b;color:#b45309}
+  .lg.auto{background:#edfaf0;border-color:#22c55e;color:#15803d}
+  .step{border:2px solid #e2e8f0;border-radius:14px;padding:14px 16px;margin:0 0 14px}
+  .step .num{display:inline-block;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#64748b;margin-bottom:8px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch}
+  .card{flex:1 1 220px;border-radius:10px;padding:10px 14px;border:2px solid}
+  .card.human{background:#e8f2ff;border-color:#3b82f6}
+  .card.gate{background:#fff7e6;border-color:#f59e0b}
+  .card.auto{background:#edfaf0;border-color:#22c55e}
+  .card b{display:block;font-size:16px;margin-bottom:2px}
+  .card span{display:block;font-size:13.5px;color:#475569}
+  .card.wide{flex:1 1 100%}
+  .arrow{text-align:center;padding:2px 0;color:#64748b;font-size:12.5px}
+  .arrow b{font-size:19px;display:block;line-height:1.1}
+  .chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin:6px 0 2px}
+  .chip{padding:5px 12px;border-radius:999px;border:2px solid;font-weight:700;font-size:14.5px;background:#fff}
+  .chip.g{border-color:#22c55e;color:#15803d}
+  .chip.a{border-color:#f59e0b;color:#b45309;background:#fff7e6}
+  .ca{color:#94a3b8;font-size:18px;font-weight:700}
+  .cap{text-align:center;font-size:13px;color:#64748b;margin-top:4px}
+  .note{background:#f8fafc;border:2px dashed #94a3b8;border-radius:12px;padding:10px 16px;margin-top:4px;font-size:14.5px}
+  .note code{background:#e2e8f0;border-radius:6px;padding:2px 6px;font-size:14px}
+  details{margin-top:20px;background:#f8fafc;border-radius:12px;padding:10px 16px}
+  summary{cursor:pointer;font-weight:700;color:#334155}
+  pre{overflow-x:auto;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px;font-size:13px;line-height:1.45}
+  @media (max-width:560px){.wrap{font-size:15.5px}.card span{font-size:13px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ship-kit — прогон одним взглядом</h1>
+  <p class="sub">человек печатает два текста · всё необратимое — через 🔒-карточку · остальное идёт само</p>
+
+  <div class="legend">
+    <span class="lg human">печатает человек</span>
+    <span class="lg gate">🔒 подтверждение</span>
+    <span class="lg auto">идёт само</span>
+  </div>
+
+  <div class="step">
+    <span class="num">1 · старт</span>
+    <div class="row">
+      <div class="card human"><b>/ship-kit:task PRJ-42</b><span>старт: задание + MCP-алиасы</span></div>
+      <div class="card human"><b>продолжи PRJ-42</b><span>возврат: строка из отчёта «ДАЛЬШЕ»</span></div>
+      <div class="card gate"><b>чек-лист плана → одно «да»</b><span>весь порядок слотов сразу</span></div>
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="num">2 · план прогона — runs/ПРОЕКТ/PRJ-42/plan.md</span>
+    <div class="chain">
+      <span class="chip g">propose</span><span class="ca">→</span>
+      <span class="chip a">pr 🔒</span><span class="ca">→</span>
+      <span class="chip g">apply</span><span class="ca">→</span>
+      <span class="chip a">pr 🔒</span><span class="ca">→</span>
+      <span class="chip a">ci 🔒</span>
+    </div>
+    <div class="cap">слоты называет план · pr может стоять после любого · ci — обычно хвост · после слота spec — ревью спеки</div>
+  </div>
+
+  <div class="step">
+    <span class="num">3 · слот pr — жизнь PR (вместе с замечаниями)</span>
+    <div class="row">
+      <div class="card gate"><b>🔒 карточка «пуш+PR»</b><span>ветка · коммиты · целевая</span></div>
+      <div class="card auto"><b>пуш → PR → ждёт MERGED</b><span>опрос сам, без вопросов</span></div>
+    </div>
+    <div class="arrow"><b>↩</b>пришли чужие замечания</div>
+    <div class="row">
+      <div class="card gate"><b>🔒 карточка фикса</b><span>черновики ответов · коммиты · закрываемые замечания</span></div>
+      <div class="card auto"><b>ответы → пуш → resolve</b><span>после «да»; id ответов — в журнал плана</span></div>
+      <div class="card auto"><b>⟲ снова ждёт MERGED</b><span>следом — следующий слот плана</span></div>
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="num">4 · слот ci — сборка/деплой</span>
+    <div class="row">
+      <div class="card gate"><b>🔒 карточка запуска</b><span>джоба · параметры</span></div>
+      <div class="card auto"><b>зелёная → план закрыт</b><span>дальше — предложение архивации прогона</span></div>
+      <div class="card auto"><b>RED → диагноз</b><span>в диффе — фикс в тот же PR · постороннее — тех-PR · затем ci ×N</span></div>
+    </div>
+  </div>
+
+  <div class="note">📄 Архивация прогона (<code>runs/archive/…</code>) предлагается после закрытия плана. Пока план открыт, отчёт фазы кончается строкой <code>ДАЛЬШЕ: продолжи PRJ-42</code>. Схема — пример одного проекта: состав слотов у каждого свой.</div>
+
+  <details>
+    <summary>Исходник mermaid (для правок)</summary>
+    <pre>flowchart TB
+    classDef human fill:#e8f4ff,stroke:#3b82f6
+    classDef gate fill:#fff3e0,stroke:#f59e0b
+    classDef auto fill:#f0fdf4,stroke:#22c55e
+
+    START(["/ship-kit:task PRJ-42"]):::human
+    RES(["продолжи PRJ-42"]):::human
+    CHK["чек-лист плана → одно «да»"]:::gate
+    NXT["диспетчер: следующий слот"]:::auto
+    EXT["слот набора (spec · apply · …)"]:::auto
+    REV["слот был spec: ревью спеки"]:::gate
+    SPR["🔒 карточка «пуш+PR»"]:::gate
+    WAIT["ждёт MERGED (опрос, без вопросов)"]:::auto
+    CMT["пришли чужие замечания"]:::auto
+    FIX["🔒 карточка фикса: черновики ответов + коммиты"]:::gate
+    DOFIX["ответы (id → журнал) → пуш → resolve"]:::auto
+    SCI["🔒 карточка запуска джобы"]:::gate
+    GREEN(["зелёная → план закрыт → предложение архивации"]):::auto
+    RED["RED → диагноз"]:::auto
+    FS["причина в диффе → фикс в тот же PR"]:::auto
+    FT["посторонняя → тех-PR (слот дописан)"]:::auto
+    DAL["ДАЛЬШЕ: продолжи PRJ-42"]:::auto
+
+    START --> CHK --> NXT
+    RES --> CHK
+    NXT -->|слот набора| EXT --> NXT
+    EXT -->|слот был spec| REV -->|продолжить| NXT
+    NXT -->|слот pr| SPR -->|«да»: пуш + PR| WAIT
+    WAIT -->|замечания| CMT --> FIX -->|«да»| DOFIX --> WAIT
+    WAIT -->|MERGED| NXT
+    NXT -->|слот ci| SCI
+    SCI -->|зелёная| GREEN
+    SCI -->|RED| RED
+    RED -->|в диффе| FS --> SPR
+    RED -->|посторонняя| FT --> SPR
+    NXT -.-> DAL
+    DAL -.-> RES</pre>
+  </details>
+</div>
+</body>
+</html>
