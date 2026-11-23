@@ -125,6 +125,7 @@ FIXABLE: true|false
 RELATED: task-diff | external | —
 CONFIDENCE: high|medium|low
 HANDOFF: task | task-tech | human | —
+ДАЛЬШЕ: продолжи <КЛЮЧ> (план не закрыт; закрыт — строка не выводится)
 ```
 
 ## Завершение фазы
