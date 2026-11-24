@@ -1,6 +1,7 @@
 # План прогона — calc / PRJ-42
 
 Задача: экспорт CSV из отчётов (тикет PRJ-42, профиль openspec)
+директория прогона: .qwen/tmp/ship-kit/PRJ-42/ (дефолт каскада; issues.md — рядом)
 worktree: .qwen/worktrees/calc-PRJ-42
 
 ## Чек-лист

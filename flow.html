@@ -56,14 +56,14 @@
   <div class="step">
     <span class="num">1 · старт</span>
     <div class="row">
-      <div class="card human"><b>/ship-kit:task PRJ-42</b><span>старт: задание + MCP-алиасы</span></div>
+      <div class="card human"><b>/ship-kit-task PRJ-42</b><span>старт: задание + MCP-алиасы</span></div>
       <div class="card human"><b>продолжи PRJ-42</b><span>возврат: строка из отчёта «ДАЛЬШЕ»</span></div>
       <div class="card gate"><b>чек-лист плана → одно «да»</b><span>весь порядок слотов сразу</span></div>
     </div>
   </div>
 
   <div class="step">
-    <span class="num">2 · план прогона — runs/ПРОЕКТ/PRJ-42/plan.md</span>
+    <span class="num">2 · план прогона — .qwen/tmp/ship-kit/PRJ-42/plan.md</span>
     <div class="chain">
       <span class="chip g">propose</span><span class="ca">→</span>
       <span class="chip a">pr 🔒</span><span class="ca">→</span>
@@ -97,7 +97,7 @@
     </div>
   </div>
 
-  <div class="note">📄 Архивация прогона (<code>runs/archive/…</code>) предлагается после закрытия плана. Пока план открыт, отчёт фазы кончается строкой <code>ДАЛЬШЕ: продолжи PRJ-42</code>. Схема — пример одного проекта: состав слотов у каждого свой.</div>
+  <div class="note">📄 Архивация прогона (<code>.qwen/tmp/ship-kit/archive/PRJ-42/</code> — дефолтный временный корень; конвенция может назвать постоянный) предлагается после закрытия плана. Пока план открыт, отчёт фазы кончается строкой <code>ДАЛЬШЕ: продолжи PRJ-42</code>. Схема — пример одного проекта: состав слотов у каждого свой.</div>
 
   <details>
     <summary>Исходник mermaid (для правок)</summary>
@@ -106,7 +106,7 @@
     classDef gate fill:#fff3e0,stroke:#f59e0b
     classDef auto fill:#f0fdf4,stroke:#22c55e
 
-    START(["/ship-kit:task PRJ-42"]):::human
+    START(["/ship-kit-task PRJ-42"]):::human
     RES(["продолжи PRJ-42"]):::human
     CHK["чек-лист плана → одно «да»"]:::gate
     NXT["диспетчер: следующий слот"]:::auto

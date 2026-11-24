@@ -1,4 +1,4 @@
 ---
 name: ship-kit
-description: Расширение Qwen Code ship-kit (extensions/ship-kit) — конвейер «тикет → прод»: стадии, записи знания, гейты человека. Per-project openspec-корень (репо мультипроектное: скиллы/расширения/агенты); скиллы openspec-* общие для репо — .agents/skills в корне.
+description: Комплект скиллов ship-kit (skills/ship-kit-task, ship-kit-pr, ship-kit-ci — поставка копией каталогов, без расширения) — конвейер «тикет → прод»: фазы, план-файл прогона, гейты человека. Per-project openspec-корень (репо мультипроектное: скиллы/примеры/агенты); скиллы openspec-* общие для репо — .agents/skills в корне.
 ---
