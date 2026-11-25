@@ -3,7 +3,7 @@
 ## 1. Стенд в dev/ship-kit
 
 - [x] 1.1 `dev/ship-kit/mcp/mock.mjs` — перенос из examples/conveyor/e2e/mcp/mock.mjs (роли argv, MOCK_STATE, RUNNING на первом опросе jenkins_get_build, autoMerge PR; шапка — v3). Проверить: `node --check dev/ship-kit/mcp/mock.mjs` зелёный
-- [x] 1.2 `dev/ship-kit/make_sandbox.mjs` — песочница `$TMPDIR/ship-kit-v3/green777`: bare+репо (фикстура app.py без mul), сид мока (PRJ-777, сборка SUCCESS, autoMerge), копия `skills/ship-kit-*` → `<sb>/.qwen/skills/`, `.qwen/settings.json` (jira/bitbucket/jenkins/confluence моки), run.sh (`--model glm-5.3-flash --yolo --max-wall-time 10m`, session.txt, tee run.log) и retry.sh (`--resume`, «продолжи прогон PRJ-777»). Проверить: `node --check` зелёный
+- [x] 1.2 `dev/ship-kit/make_sandbox.mjs` — песочница `$TMPDIR/ship-kit/green777`: bare+репо (фикстура app.py без mul), сид мока (PRJ-777, сборка SUCCESS, autoMerge), копия `skills/ship-kit-*` → `<sb>/.qwen/skills/`, `.qwen/settings.json` (jira/bitbucket/jenkins/confluence моки), run.sh (`--model glm-5.3-flash --yolo --max-wall-time 10m`, session.txt, tee run.log) и retry.sh (`--resume`, «продолжи прогон PRJ-777»). Проверить: `node --check` зелёный
 - [x] 1.3 `dev/ship-kit/check.sh` — критерии успеха: план-файл `.qwen/tmp/ship-kit/PRJ-777/plan.md` существует; незакрытых чекбоксов нет; PR MERGED в mock-state; джоба запускалась и опрошена ≥ 2 раз; ветка PRJ-777 в bare; в run.log нет «ждать ли». Проверить: `bash -n dev/ship-kit/check.sh` зелёный
 - [x] 1.4 `dev/ship-kit/run_one.sh` — make_sandbox → run.sh → check.sh одной командой. Проверить: `bash -n dev/ship-kit/run_one.sh` зелёный
 

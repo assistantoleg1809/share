@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // make_sandbox.mjs [green777] — песочница одного прогона ship-kit v3:
-// $TMPDIR/ship-kit-v3/<сценарий> — git-репо (origin → соседний bare),
+// $TMPDIR/ship-kit/<сценарий> — git-репо (origin → соседний bare),
 // фикстуры, сид мока (mock-state.json), копия скиллов skills/ship-kit-*,
 // .qwen/settings.json с моками MCP, run.sh / retry.sh (qwen, glm-5.3-flash).
 // Всё для стенда — в dev/ship-kit; скиллы берутся из поставки skills/.
@@ -19,7 +19,7 @@ const PROMPTS = {
 };
 if (!PROMPTS[scenario]) { console.error('usage: make_sandbox.mjs green777'); process.exit(2); }
 
-const base = `${(process.env.TMPDIR || '/tmp').replace(/\/+$/, '')}/ship-kit-v3`;
+const base = `${(process.env.TMPDIR || '/tmp').replace(/\/+$/, '')}/ship-kit`;
 const root = `${base}/${scenario}`;
 const bare = `${base}/${scenario}-bare.git`;
 for (const p of [root, bare]) if (existsSync(p)) rmSync(p, { recursive: true, force: true });

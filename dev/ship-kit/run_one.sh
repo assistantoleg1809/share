@@ -4,7 +4,7 @@
 #   bash dev/ship-kit/run_one.sh
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-SB="${TMPDIR:-/tmp}/ship-kit-v3/green777"
+SB="${TMPDIR:-/tmp}/ship-kit/green777"
 
 node "$HERE/make_sandbox.mjs" green777
 bash "$SB/run.sh"

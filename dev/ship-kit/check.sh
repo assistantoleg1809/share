@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # check.sh <песочница> — машино-проверяемые критерии успеха прогона green777.
 set -u
-SB="${1:-${TMPDIR:-/tmp}/ship-kit-v3/green777}"
+SB="${1:-${TMPDIR:-/tmp}/ship-kit/green777}"
 cd "$SB" || { echo "нет песочницы: $SB"; exit 2; }
 pass=0; fail=0
 chk() { if eval "$2" >/dev/null 2>&1; then echo "PASS $1"; pass=$((pass+1)); else echo "FAIL $1"; fail=$((fail+1)); fi; }

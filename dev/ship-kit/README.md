@@ -17,13 +17,13 @@
 bash dev/ship-kit/run_one.sh
 ```
 
-Скрипт: соберёт песочницу `$TMPDIR/ship-kit-v3/green777` → запустит
+Скрипт: соберёт песочницу `$TMPDIR/ship-kit/green777` → запустит
 агента → проверит критерии (`check.sh`). По шагам то же самое:
 
 ```
 node dev/ship-kit/make_sandbox.mjs green777
-bash "$TMPDIR/ship-kit-v3/green777/run.sh"
-bash dev/ship-kit/check.sh "$TMPDIR/ship-kit-v3/green777"
+bash "$TMPDIR/ship-kit/green777/run.sh"
+bash dev/ship-kit/check.sh "$TMPDIR/ship-kit/green777"
 ```
 
 **Промпт прогона** (зашит в make_sandbox.mjs, дословно):
@@ -42,7 +42,7 @@ PRJ-777 возьми задачу: добавь в калькулятор фун
 Ctrl-C, затем продолжить тот же прогон (план — токен возобновления):
 
 ```
-bash "$TMPDIR/ship-kit-v3/green777/retry.sh"
+bash "$TMPDIR/ship-kit/green777/retry.sh"
 ```
 
 ## Как понять, что успешно
