@@ -36,8 +36,10 @@ trigger; опрос: RUNNING → sleep 5 → SUCCESS) → план закрыт 
 
 ## Как расширять
 
-RED-сиды мока (`mock.mjs`, `jenkins.results['calc-app']`):
-`FAIL_CODE` (правка кода, тот же PR), `FAIL_CONFIG` (конфиг),
-`FAIL_SONAR` (не чинить), `FAIL_INFRA` (эскалация DEVOPS) — сценарий
-«запусти сборку и исправь ошибки» по образцу green777: свой сид в
-make_sandbox.mjs + свой промпт + критерии в check.sh.
+Полная пошаговая инструкция — `INSTRUCTION.md`, раздел «Новые
+сценарии» (промпт в `PROMPTS`, фикстуры и сид по `scenario`, ручной
+вариант — тот же промпт без «Подтверждаю …», критерии — сюда в
+SCENARIOS.md). Доступные RED-исходы мока (`mock.mjs`,
+`jenkins.results['calc-app']`): `FAIL_CODE` (правка кода, тот же PR),
+`FAIL_CONFIG` (конфиг), `FAIL_SONAR` (не чинить), `FAIL_INFRA`
+(эскалация DevOps — тикет в jira-issues).
