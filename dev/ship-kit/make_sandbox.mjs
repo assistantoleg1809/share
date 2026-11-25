@@ -81,7 +81,14 @@ set -o pipefail
 cd "${root}"
 qwen --resume "$(cat session.txt)"${Q}"продолжи прогон PRJ-777 с места остановки" 2>&1 | tee -a run.log
 `);
-execSync(`chmod +x ${root}/run.sh ${root}/retry.sh`);
+// ручной режим: интерактивная сессия в песочнице, карточки подтверждает
+// человек (промпт — без pre-approved фраз, см. README «Ручной запуск»)
+writeFileSync(join(root, 'manual.sh'), `#!/usr/bin/env bash
+cd "${root}"
+qwen --model glm-5.3-flash
+`);
+execSync(`chmod +x ${root}/run.sh ${root}/retry.sh ${root}/manual.sh`);
 console.log(`sandbox: ${root}`);
 console.log(`prompt : ${PROMPTS[scenario]}`);
 console.log(`next   : bash ${root}/run.sh   (завис — Ctrl-C, затем bash ${root}/retry.sh)`);
+console.log(`manual : bash ${root}/manual.sh  — ручной прогон глазами (карточки подтверждаешь ты)`);

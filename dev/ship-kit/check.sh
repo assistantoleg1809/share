@@ -12,7 +12,7 @@ chk "PR создан и MERGED" 'node -e "const s=require(\"./mock-state.json\")
 chk "сборка запускалась (jenkins.byNum не пуст)" 'node -e "const s=require(\"./mock-state.json\");if(!Object.keys(s.jenkins.byNum).length)process.exit(1)"'
 chk "агент ждал джобу (опросов >= 2: RUNNING -> SUCCESS)" 'node -e "const s=require(\"./mock-state.json\");const n=Math.max(0,...Object.values(s.jenkins.polls||{}));if(n<2)process.exit(1)"'
 chk "ветка задачи запушена в bare" 'git ls-remote origin | grep -q "PRJ-777"'
-chk "не спрашивал «ждать ли»" '! grep -qi "ждать ли" run.log'
+chk "не спрашивал «ждать ли» (run.log; ручной прогон — глазами)" 'test ! -f run.log || ! grep -qi "ждать ли" run.log'
 
 echo "----"
 echo "PASS=$pass FAIL=$fail"
