@@ -13,18 +13,25 @@ v3 лишился тестового стенда: расширение `extensi
 
 ## What Changes
 
-- Новый `dev/ship-kit/` (не поставляется, только разработка/приёмка):
-  `mcp/mock.mjs` — универсальный мок MCP (jenkins · jira · confluence
-  · bitbucket · sonar; stdio JSON-RPC, состояние в файле;
-  перенос из examples/conveyor/e2e), `make_sandbox.mjs` — песочница
-  одного прогона (git-репо + bare origin, фикстуры, сид мока, копия
-  скиллов из `skills/`, `.qwen/settings.json` с моками, run.sh /
-  retry.sh), `run_one.sh` — сборка → запуск → проверка, `check.sh` —
-  критерии успеха, `SCENARIOS.md` (сценарий green777), `e2e-run.md`
-  — журнал прогонов, `README.md` — инструкция и промпт для человека.
-- Опросник перенесён: `docs/review.md` → `dev/ship-kit/review.md`
+- Новый `dev/ship-kit/` (не поставляется, только разработка/приёмка)
+  с иерархией (доворка 2026-11-25: «в корне только скиллы»):
+  `stand/` — тест-стенд (`mcp/mock.mjs` — универсальный мок
+  (jenkins · jira · confluence · bitbucket · sonar; stdio JSON-RPC,
+  состояние в файле; перенос из examples/conveyor/e2e),
+  `make_sandbox.mjs` — песочница, `run_one.sh` / `check.sh`,
+  `SCENARIOS.md`, `e2e-run.md`, `INSTRUCTION.md`),
+  `review/review.md` — опросник, `docs/` — manual/changelog/схема/
+  эталон плана, `examples/` и `research/` — образцы и снимки,
+  `README.md` — карта воркспейса; корень репо — только `skills/`
+  (+ `openspec/`: CLI и скиллы openspec-* ищут корень вверх от cwd —
+  перенос ломает обнаружение).
+- Опросник перенесён: `docs/review.md` → `dev/ship-kit/review/review.md`
   (приёмка = стенд + опросник в одном месте); `docs/ship-kit.md` п.9
   обновлён.
+- Прочее из корня репо перенесено в `dev/ship-kit/docs/` (ship-kit.md,
+  upgrade.md, flow.html, example-plan.md), `dev/ship-kit/examples/`
+  (conveyor, central-catalog, demo-project) и `dev/ship-kit/research/`;
+  относительные ссылки исправлены.
 - Скиллы в песочницу копируются из `skills/` репо на момент сборки —
   тестируется текущее состояние поставки, дублей нет.
 - Ручной режим (доворка по запросу 2026-11-25): `manual.sh` в
@@ -55,9 +62,9 @@ v3 лишился тестового стенда: расширение `extensi
 
 ## Impact
 
-- Добавляется `dev/` в репо (каталог разработки, в поставку skills/
-  не входит); `docs/review.md` → `dev/ship-kit/review.md`;
-  `docs/ship-kit.md` п.9.
-- Прогон выполняет человек по README (одна команда); e2e-прогоны
-  агентом в этом change не выполняются — только сборка стенда и
-  синтаксические проверки.
+- Корень репо: только `skills/` и `openspec/` (каталоги разработки — в
+  `dev/ship-kit/`); скиллы в песочницу копируются из `skills/` —
+  тестируется текущее состояние поставки, дублей нет.
+- Прогон выполняет человек по stand/INSTRUCTION.md (одна команда);
+  e2e-прогоны агентом в этом change не выполняются — только сборка
+  стенда и синтаксические проверки.

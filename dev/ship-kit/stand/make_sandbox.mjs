@@ -3,14 +3,15 @@
 // $TMPDIR/ship-kit/<сценарий> — git-репо (origin → соседний bare),
 // фикстуры, сид мока (mock-state.json), копия скиллов skills/ship-kit-*,
 // .qwen/settings.json с моками MCP, run.sh / retry.sh (qwen, glm-5.3-flash).
-// Всё для стенда — в dev/ship-kit; скиллы берутся из поставки skills/.
+// Всё для стенда — в dev/ship-kit/stand; скиллы берутся из поставки
+// skills/ в корне репо.
 import { mkdirSync, writeFileSync, cpSync, existsSync, rmSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const REPO = join(here, '../..');
+const REPO = join(here, '../../..');
 const MOCK = join(here, 'mcp/mock.mjs');
 
 const scenario = process.argv[2] || 'green777';

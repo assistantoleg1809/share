@@ -6,10 +6,10 @@
 **Контекст.** Репо `~/projects/share`, ветка `v3`. Поставка — три
 скилла `skills/ship-kit-task` · `ship-kit-pr` · `ship-kit-ci` (конвейер
 «задача → PR → сборка»: гейты 🔒, план-файл прогона, ожидание MERGED и
-джобы). Стенд `dev/ship-kit/` проверяет их живьём на моках MCP;
+джобы). Стенд `dev/ship-kit/stand/` проверяет их живьём на моках MCP;
 прогоны — **только glm-5.3-flash**. Правила поведения — спека
 `openspec/specs/base-skills/spec.md`; эталоны для сверки —
-`dev/ship-kit/review.md`.
+`dev/ship-kit/review/review.md`.
 
 **Предпосылки:** node ≥ 18, `qwen` CLI в PATH, доступ к
 glm-5.3-flash; все команды — из корня репо `~/projects/share`.
@@ -17,7 +17,7 @@ glm-5.3-flash; все команды — из корня репо `~/projects/sh
 ## Режим A — прогон скриптом (headless)
 
 ```
-bash dev/ship-kit/run_one.sh [сценарий]
+bash dev/ship-kit/stand/run_one.sh [сценарий]
 ```
 
 (по умолчанию `green777`; = сборка песочницы `$TMPDIR/ship-kit/<сценарий>`
@@ -72,13 +72,13 @@ PRJ-777 возьми задачу: добавь в калькулятор фун
    «ждать ли» не задавал (в ручном режиме видно глазами);
 4. Финальный отчёт: `OK: true`, строки `ДАЛЬШЕ` нет.
 
-Машино-проверяемое — `bash dev/ship-kit/check.sh
+Машино-проверяемое — `bash dev/ship-kit/stand/check.sh
 "$TMPDIR/ship-kit/<сценарий>"` (без run.log пропустит пункт про лог —
 ручной режим лога не пишет).
 
 ## После прогона
 
-- **GREEN:** итог в `dev/ship-kit/e2e-run.md` (дата, режим, попытки,
+- **GREEN:** итог в `dev/ship-kit/stand/e2e-run.md` (дата, режим, попытки,
   дословные строки `OK:`/`JOB:` и из check.sh) и команда «архив» —
   закроет активный change `dev-stand`.
 - **RED:** причина в журнал; расхождение со скиллами/спекой —
@@ -87,7 +87,7 @@ PRJ-777 возьми задачу: добавь в калькулятор фун
 ## Новые сценарии — руками и скриптом
 
 Сценарий = имя + промпт + фикстуры + сид мока + критерии. Добавление —
-5 шагов, все в `dev/ship-kit/make_sandbox.mjs` (и запись в
+5 шагов, все в `dev/ship-kit/stand/make_sandbox.mjs` (и запись в
 `SCENARIOS.md`):
 
 1. **Промпт:** в объекте `PROMPTS` — запись `'<имя>': '<промпт>'`
@@ -113,20 +113,21 @@ PRJ-777 возьми задачу: добавь в калькулятор фун
 Сборка и запуск нового сценария:
 
 ```
-node dev/ship-kit/make_sandbox.mjs <имя>
+node dev/ship-kit/stand/make_sandbox.mjs <имя>
 bash "$TMPDIR/ship-kit/<имя>/run.sh"        # headless
 bash "$TMPDIR/ship-kit/<имя>/manual.sh"     # руками
-bash dev/ship-kit/run_one.sh <имя>          # всё одной командой (headless)
+bash dev/ship-kit/stand/run_one.sh <имя>          # всё одной командой (headless)
 ```
 
 Итог — в `e2e-run.md`.
 
-## Карта стенда
+## Карта стенда (dev/ship-kit/stand) и рядом
 
 - `mcp/mock.mjs` — моки MCP (роли argv, состояние в файле, первый
   опрос джобы RUNNING);
 - `make_sandbox.mjs` — песочница + раннеры (run.sh / retry.sh /
   manual.sh); `run_one.sh`, `check.sh` — прогон одной командой и
   критерии green777;
-- `SCENARIOS.md` — сценарии; `e2e-run.md` — журнал; `review.md` —
-  опросник ревью; `README.md` — краткий обзор.
+- `SCENARIOS.md` — сценарии; `e2e-run.md` — журнал;
+- рядом: `../review/review.md` — опросник ревью; `../docs/` — manual
+  комплекта и схема; `../README.md` — обзор воркспейса.
