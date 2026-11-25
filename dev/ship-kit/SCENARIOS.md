@@ -1,0 +1,39 @@
+# Сценарии тест-стенда ship-kit v3 (dev/ship-kit)
+
+Прогон — всегда glm-5.3-flash. Песочница: `$TMPDIR/ship-kit-v3/<сцена>` —
+git-репо + моки (состояние `mock-state.json`); скиллы копируются из
+`skills/` на момент сборки. Промпт несёт pre-approved фразы гейтов
+(«подтверждаю …») — в headless нет человека для карточек; `poll=5` —
+чтобы ожидание джобы не тянуло дефолт 600 сек.
+
+## green777 — happy-path базы (один успешный прогон)
+
+**Сид:** jira `PRJ-777` (mul(a,b) в калькулятор); jenkins `calc-app`
+→ `SUCCESS` (первый опрос RUNNING, второй SUCCESS); bitbucket autoMerge
+→ PR сразу MERGED. Фикстура `app.py` — без `mul` (агент добавит).
+
+**Промпт (дословно, зашит в make_sandbox.mjs):**
+
+```
+PRJ-777 возьми задачу: добавь в калькулятор функцию умножения mul(a, b) и вызови её в run(). mcp-tracker=jira, mcp-repo=bitbucket, mcp-build=jenkins, poll=5. Подтверждаю пуш ветки и создание PR. Подтверждаю запуск сборки PRJ-777.
+```
+
+**Ожидаемая цепочка:** task (план по умолчанию task → pr 🔒 → ci 🔒,
+без вопроса — внешних скиллов нет; mul в app.py; коммит) → pr
+(карточка «пуш+PR» pre-approved; пуш в bare; PR через мок; ожидание
+MERGED — первый опрос сразу) → ci (карточка запуска pre-approved;
+trigger; опрос: RUNNING → sleep 5 → SUCCESS) → план закрыт →
+предложение архивации. Финальный отчёт: `OK: true`, строка
+`ДАЛЬШЕ` не выводится.
+
+**Критерии успеха** — `bash dev/ship-kit/check.sh <песочница>`
+(план-файл; слоты закрыты; PR MERGED; джоба polls ≥ 2 — агент ждал;
+ветка в bare; в логе нет «ждать ли»).
+
+## Как расширять
+
+RED-сиды мока (`mock.mjs`, `jenkins.results['calc-app']`):
+`FAIL_CODE` (правка кода, тот же PR), `FAIL_CONFIG` (конфиг),
+`FAIL_SONAR` (не чинить), `FAIL_INFRA` (эскалация DEVOPS) — сценарий
+«запусти сборку и исправь ошибки» по образцу green777: свой сид в
+make_sandbox.mjs + свой промпт + критерии в check.sh.
