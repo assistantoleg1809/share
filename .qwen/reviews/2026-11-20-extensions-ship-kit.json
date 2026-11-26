@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "target": "extensions/ship-kit",
+  "effort": "medium",
+  "verdict": {
+    "bodyTrim": {
+      "sections": 0,
+      "deferralList": false,
+      "fold": false,
+      "truncated": false
+    },
+    "event": "COMMENT",
+    "body": "⚠️ This run could not certify that any of this diff was reviewed.\n\nNot reviewed: reverse audit — medium effort runs no reverse audit by design (verdict capped at Comment).\n\nNot reviewed: the executable-script lint — could not read the plan to check the gate.\n\nNot reviewed: the blocker re-check — could not read the plan to check the gate.\n\nNot reviewed: coverage — the plan could not be used (ENOENT: no such file or directory, open '.qwen/tmp/file-review-ship-kit-plan.json'), so this run cannot show that any of the diff was read.\n\nNot reviewed: verification — could not check that Step 4 and Step 5 ran (ENOENT: no such file or directory, open '.qwen/tmp/file-review-ship-kit-plan.json').\n\n_— glm-5.3@aa678d10 via Qwen Code /review (v0.28.0)_",
+    "baseEvent": "APPROVE",
+    "cappedBy": [
+      "unreviewed-dimension"
+    ],
+    "downgraded": false,
+    "downgradedFrom": null,
+    "remediation": [],
+    "waivedFixes": [],
+    "deferredCount": 0,
+    "floorEnforced": [],
+    "postedInline": 0,
+    "postedFresh": 0,
+    "fixedFindings": [],
+    "lowSignal": null,
+    "approachSignal": null,
+    "verdictLine": "Verdict: Comment — an Approve was NOT available: a dimension nobody reviewed"
+  },
+  "findings": [
+    {
+      "id": "f4",
+      "severity": "Suggestion",
+      "confidence": "high",
+      "source": "review",
+      "summary": "Чек-лист адаптации называет конкретный инструмент спекирования: «permissions.allow … для рабочих команд (git/openspec/node)» — против требования «Инструмент спекирования не вшивается» (имя MUST NOT упоминаться ни в одном поставляемом файле)",
+      "shortSummary": "Чек-лист адаптации называет конкретный инструмент…",
+      "failureScenario": "Проект с другим спек-инструментом читает чек-лист адаптации и видит openspec как подразумеваемую команду комплекта; инвариант «файлы ship-kit не меняются при смене исполнителя слота» ослаблен в docs — имя зафиксировано в поставке",
+      "witness": "grep -rin openspec extensions/ship-kit/ → ровно одно совпадение: docs/ship-kit.md:103 «(git/openspec/node)»",
+      "fixWitness": "grep -rin openspec extensions/ship-kit/ → 0 совпадений",
+      "suggestedFix": "«(git/<CLI спек-инструмента проекта>/node)» или нейтральное «(git, CLI спекирования проекта, node)»",
+      "locations": [
+        {
+          "file": "extensions/ship-kit/docs/ship-kit.md",
+          "line": 103
+        }
+      ]
+    },
+    {
+      "id": "f3",
+      "severity": "Suggestion",
+      "confidence": "high",
+      "source": "review",
+      "summary": "Предписание об отсутствующем alias разорвано списком «Роли алиасов» посреди фразы: «Конкретный alias не назван нигде — в» / [список ролей] / «проекте этого MCP нет: работай без него…»",
+      "shortSummary": "Предписание об отсутствующем alias разорвано списком «Роли…",
+      "failureScenario": "Шаг-0 читается flash-моделью линейно; правило «в проекте этого MCP нет — работай без него и отметь в отчёте» разорвано вставкой на три строки и теряется на фоне каскада клона — в ci/SKILL.md то же правило идёт цельным абзацем и применяется, в task модель переспрашивает или стопит вместо тихой деградации",
+      "witness": "grep -n -A4 «не назван нигде» extensions/ship-kit/skills/task/SKILL.md → 48: «Конкретный alias не назван нигде — в», 49–51: список ролей, 52: «проекте этого MCP нет: работай без него и честно отметь в отчёте.»",
+      "fixWitness": "grep «не назван нигде — в проекте этого MCP нет» одной строкой в task/SKILL.md",
+      "suggestedFix": "Склеить фразу и вынести список ролей после неё (как в ci/SKILL.md): «Конкретный alias не назван нигде — в проекте этого MCP нет: работай без него и честно отметь в отчёте. Ни одного и конвенции нет — вопрос и стоп. Роли алиасов: tracker · docs · …»",
+      "locations": [
+        {
+          "file": "extensions/ship-kit/skills/task/SKILL.md",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "id": "f2",
+      "severity": "Suggestion",
+      "confidence": "high",
+      "source": "review",
+      "summary": "Взаимодействие тип-набора (Шаг-0 п.4) с чек-листом внешних скиллов (Шаг-0 п.2) не определено: не сказано, входит ли набор типа в подтверждаемый чек-лист плана и что сильнее — перечень задания или набор типа",
+      "shortSummary": "Взаимодействие тип-набора (Шаг-0 п.4) с чек-листом внешних…",
+      "failureScenario": "Задание «PRJ-42 (business), примени скилл X»: п.2 строит подтверждаемый чек-лист [X, pr 🔒, ci 🔒], п.4 параллельно собирает slot:business-набор [Y, Z] — flash-модель выполняет оба набора, один наугад или спрашивает дважды; для spec-каскада приоритет заявлен («задание сильнее конвенции»), для тип-набора — нет",
+      "witness": "task/SKILL.md п.2: «Задание перечислило внешние скиллы — собери чек-лист… одно подтверждение»; п.4 (строки 114–135): «Набор типа: скиллы сессии с литеральной меткой…» — перекрёстной ссылки и правила приоритета нет ни в одной из точек правила (QWEN.md «Типы задач», docs/ship-kit.md п.4)",
+      "fixWitness": "новый сценарий дельты «перечень задания против набора типа» (WHEN задание перечислило скиллы и тип определён THEN выполняется перечень, тип-набор не собирается повторно)",
+      "fixConstraint": "п.2 разрешает ровно одно подтверждение чек-листа — правило не должно вводить второй вопрос (источник: task/SKILL.md п.2, спека «Порядок прогона с внешними скиллами»)",
+      "suggestedFix": "Дописать в п.4 одну строку: «Задание перечислило скиллы — перечень сильнее набора типа (чек-лист п.2 — главный); перечня нет — набор типа выполняется по чек-листу плана без отдельного подтверждения». Продублировать в QWEN.md и docs/ship-kit.md п.4",
+      "locations": [
+        {
+          "file": "extensions/ship-kit/skills/task/SKILL.md",
+          "line": 114
+        }
+      ]
+    },
+    {
+      "id": "f1",
+      "severity": "Suggestion",
+      "confidence": "high",
+      "source": "review",
+      "summary": "Мейн-спека в двух местах требует легаси-пути skill-runs/<КЛЮЧ>/ для НОВЫХ артефактов (план — строка 81, issues.md провала PR — строка 463), что противоречит требованию «Состояние прогона» той же спеки (новые прогоны только runs/<ПРОЕКТ>/<КЛЮЧ>/, легаси — только чтение) и всем файлам комплекта",
+      "shortSummary": "Мейн-спека в двух местах требует легаси-пути…",
+      "failureScenario": "Спека — контракт, по которому пишутся и ревьюятся будущие change'ы: автор следующего изменения бегло сверяется со сценарием «PR отклонён» и пишет правило issues.md в легаси-путь, либо реабилитация прогона по строке 81 создаёт план в skill-runs/<КЛЮЧ>/ — поведение, прямо запрещённое соседним требованием",
+      "witness": "grep -n skill-runs openspec/specs/base-skills/spec.md → 81: «`skill-runs/<КЛЮЧ>/plan.md` создаётся **всегда**»; 463: «провал зафиксирован задачей в `skill-runs/<КЛЮЧ>/issues.md`»; при этом 367: «легаси `skill-runs/<КЛЮЧ>/` (только чтение» и в extensions/ship-kit упоминания только легаси (task/SKILL.md:67, docs/upgrade.md:54)",
+      "fixWitness": "после правки grep 'skill-runs' по спеке возвращает только легаси-строки (367, 394–396)",
+      "fixConstraint": "легаси-упоминания строк 367 и 394–396 — контракт чтения старых прогонов, их не трогать (источник: требование «Состояние прогона — plan.md и issues.md»)",
+      "suggestedFix": "Точечный синк двух строк спеки: 81 → `runs/<ПРОЕКТ>/<КЛЮЧ>/plan.md создаётся всегда`; 463 → `runs/<ПРОЕКТ>/<КЛЮЧ>/issues.md`",
+      "locations": [
+        {
+          "file": "openspec/specs/base-skills/spec.md",
+          "line": 81
+        }
+      ]
+    }
+  ],
+  "counts": {
+    "total": 4,
+    "bySeverity": {
+      "Critical": 0,
+      "Suggestion": 4,
+      "Nice to have": 0
+    },
+    "byConfidence": {
+      "high": 4,
+      "low": 0
+    },
+    "held": 0
+  },
+  "outcomesRecorded": false,
+  "markdownReportPath": ".qwen/reviews/2026-11-20-extensions-ship-kit.md"
+}

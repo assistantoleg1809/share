@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "target": "extensions_ship-kit",
+  "headSha": "f2e8624a76184fbf292979c65351109e614802e4",
+  "files": {},
+  "stateId": "c3c07d7d4c4ddf8920b6dc1565015e2c8454675171cab733ec8e843c2beab2f8",
+  "lastModelId": "glm-5.3@aa678d10",
+  "untracked": true,
+  "source": "extensions/ship-kit"
+}

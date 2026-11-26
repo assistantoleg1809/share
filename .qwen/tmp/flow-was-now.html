@@ -1,0 +1,184 @@
+<style>
+  .wrap{max-width:920px;margin:0 auto;padding:18px 14px 40px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1e293b;font-size:15px;line-height:1.5}
+  .wrap h1{font-size:23px;margin:0 0 6px}
+  .sub{color:#64748b;margin:0 0 14px;font-size:14px}
+  h2{font-size:18px;margin:26px 0 8px}
+  h2.was{color:#b91c1c}
+  h2.now{color:#15803d}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+  .lg{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:700;border:2px solid}
+  .lg.h{background:#e8f2ff;border-color:#3b82f6;color:#1d4ed8}
+  .lg.g{background:#fff7e6;border-color:#f59e0b;color:#b45309}
+  .lg.a{background:#edfaf0;border-color:#22c55e;color:#15803d}
+  .lg.d{background:#f8fafc;border-color:#94a3b8;color:#475569}
+  .lg.r{background:#fef2f2;border-color:#ef4444;color:#b91c1c}
+  svg{width:100%;height:auto;display:block;background:#fff;border:2px solid #e2e8f0;border-radius:12px}
+  .n-h{fill:#e8f2ff;stroke:#3b82f6;stroke-width:2}
+  .n-g{fill:#fff7e6;stroke:#f59e0b;stroke-width:2}
+  .n-a{fill:#edfaf0;stroke:#22c55e;stroke-width:2}
+  .n-d{fill:#f8fafc;stroke:#94a3b8;stroke-width:2;stroke-dasharray:5 4}
+  .ed{stroke:#64748b;stroke-width:1.8;fill:none}
+  .edr{stroke:#ef4444;stroke-width:2.8;fill:none}
+  .edd{stroke:#94a3b8;stroke-width:1.6;stroke-dasharray:5 4;fill:none}
+  text{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .t1{font-size:12.5px;font-weight:700;fill:#1e293b;text-anchor:middle}
+  .t2{font-size:10.5px;fill:#64748b;text-anchor:middle}
+  .lbl{font-size:11px;fill:#475569}
+  .lblr{font-size:10.5px;font-weight:700;fill:#ef4444}
+  .plain{background:#f8fafc;border:2px dashed #94a3b8;border-radius:12px;padding:10px 16px;margin-top:18px;font-size:14.5px}
+  .plain b{color:#0f172a}
+  .plain li{margin:6px 0}
+</style>
+<div class="wrap">
+  <h1>flow.html: как было → как стало</h1>
+  <p class="sub">коммит bca3472 · скиллы не менялись — менялась только схема, чтобы совпадать со скиллами · <b>красным</b> помечено то, что исправлено</p>
+
+  <div class="legend">
+    <span class="lg h">печатает человек</span>
+    <span class="lg g">🔒 подтверждение</span>
+    <span class="lg a">идёт само</span>
+    <span class="lg d">пунктир — пауза / возврат</span>
+    <span class="lg r">✏ изменено</span>
+  </div>
+
+  <h2 class="was">БЫЛО — до правки</h2>
+  <svg viewBox="0 0 860 890" role="img" aria-label="Схема прогона до правки">
+    <defs>
+      <marker id="mA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#64748b"/></marker>
+      <marker id="mRA" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0,0 L9,4 L0,9 z" fill="#ef4444"/></marker>
+      <marker id="mDA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#94a3b8"/></marker>
+    </defs>
+
+    <path class="ed" d="M160 60 L350 100" marker-end="url(#mA)"/>
+    <path class="ed" d="M390 60 L440 100" marker-end="url(#mA)"/>
+    <path class="ed" d="M440 156 L440 180" marker-end="url(#mA)"/>
+    <path class="ed" d="M320 228 L150 260" marker-end="url(#mA)"/>
+    <text class="lbl" x="150" y="246" text-anchor="middle">слот набора</text>
+    <path class="ed" d="M145 312 L145 350" marker-end="url(#mA)"/>
+    <path class="ed" d="M212 350 L212 324" marker-end="url(#mA)"/>
+    <text class="lbl" x="220" y="338">продолжить →</text>
+    <path class="ed" d="M590 206 L645 260" marker-end="url(#mA)"/>
+    <text class="lbl" x="558" y="230" text-anchor="middle">слот pr</text>
+    <path class="ed" d="M440 228 L158 518" marker-end="url(#mA)"/>
+    <text class="lbl" x="302" y="372" text-anchor="middle">слот ci</text>
+    <path class="ed" d="M725 312 L725 350" marker-end="url(#mA)"/>
+    <text class="lbl" x="733" y="336">«да»: пуш + PR</text>
+    <path class="ed" d="M725 402 L725 440" marker-end="url(#mA)"/>
+    <text class="lbl" x="733" y="424">замечания</text>
+    <path class="ed" d="M620 462 L572 466" marker-end="url(#mA)"/>
+    <path class="ed" d="M455 492 L455 520" marker-end="url(#mA)"/>
+    <text class="lbl" x="463" y="510">«да»</text>
+    <path class="ed" d="M560 520 L560 498" marker-end="url(#mA)"/>
+    <text class="lbl" x="568" y="514">⟲ снова ждёт MERGED</text>
+    <path class="ed" d="M650 350 L650 318" marker-end="url(#mA)"/>
+    <text class="lbl" x="640" y="340" text-anchor="end">MERGED → следующий слот</text>
+    <path class="ed" d="M155 572 L155 610" marker-end="url(#mA)"/>
+    <text class="lbl" x="163" y="596">зелёная</text>
+    <path class="ed" d="M270 546 L345 610" marker-end="url(#mA)"/>
+    <text class="lbl" x="278" y="582">RED</text>
+    <path class="ed" d="M425 654 L425 680" marker-end="url(#mA)"/>
+    <path class="ed" d="M530 632 L600 680" marker-end="url(#mA)"/>
+    <text class="lbl" x="540" y="654">посторонняя</text>
+    <path class="edd" d="M290 192 L241 130" marker-end="url(#mDA)"/>
+    <path class="edd" d="M140 100 L335 61" marker-end="url(#mDA)"/>
+
+    <path class="edr" d="M425 724 L425 745 L845 745 L845 288 L831 288" marker-end="url(#mRA)"/>
+    <text class="lblr" x="560" y="737">✏3 → карточка «пуш+PR»: будто новый PR</text>
+
+    <g><rect class="n-h" x="60" y="16" width="200" height="44" rx="10"/><text class="t1" x="160" y="34">/ship-kit-task PRJ-42</text><text class="t2" x="160" y="50">старт: задание + MCP-алиасы</text></g>
+    <g><rect class="n-h" x="300" y="16" width="180" height="44" rx="10"/><text class="t1" x="390" y="34">продолжи PRJ-42</text><text class="t2" x="390" y="50">возврат из «ДАЛЬШЕ»</text></g>
+    <g><rect class="n-d" x="40" y="100" width="200" height="48" rx="10"/><text class="t1" x="140" y="120">ДАЛЬШЕ: продолжи PRJ-42</text><text class="t2" x="140" y="136">пауза · новая сессия</text></g>
+    <g><rect class="n-g" x="290" y="100" width="300" height="56" rx="10" style="stroke:#ef4444;stroke-width:3"/><text class="t1" x="440" y="122">✏1 чек-лист плана → одно «да»</text><text class="t2" x="440" y="140">весь порядок слотов сразу — ЛЮБОЙ старт с подтверждением</text></g>
+    <g><rect class="n-a" x="290" y="180" width="300" height="48" rx="10" style="stroke:#ef4444;stroke-width:3"/><text class="t1" x="440" y="202">✏2 диспетчер: следующий слот</text><text class="t2" x="440" y="218">термина «диспетчер» в скиллах нет</text></g>
+    <g><rect class="n-a" x="40" y="260" width="210" height="52" rx="10"/><text class="t1" x="145" y="282">слот набора</text><text class="t2" x="145" y="298">spec · apply · …</text></g>
+    <g><rect class="n-g" x="40" y="350" width="210" height="44" rx="10"/><text class="t1" x="145" y="370">ревью спеки</text><text class="t2" x="145" y="386">после слота spec</text></g>
+    <g><rect class="n-g" x="620" y="260" width="210" height="52" rx="10"/><text class="t1" x="725" y="282">🔒 карточка «пуш+PR»</text><text class="t2" x="725" y="298">ветка · коммиты · целевая</text></g>
+    <g><rect class="n-a" x="620" y="350" width="210" height="52" rx="10"/><text class="t1" x="725" y="372">ждёт MERGED</text><text class="t2" x="725" y="388">опрос сам, без вопросов</text></g>
+    <g><rect class="n-a" x="620" y="440" width="210" height="44" rx="10"/><text class="t1" x="725" y="460">пришли чужие замечания</text><text class="t2" x="725" y="476">свои — по id-журналу</text></g>
+    <g><rect class="n-g" x="340" y="440" width="230" height="52" rx="10"/><text class="t1" x="455" y="462">🔒 карточка фикса</text><text class="t2" x="455" y="478">черновики · коммиты · замечания</text></g>
+    <g><rect class="n-a" x="340" y="520" width="230" height="52" rx="10"/><text class="t1" x="455" y="542">ответы → пуш → resolve</text><text class="t2" x="455" y="558">id ответов — в журнал</text></g>
+    <g><rect class="n-g" x="40" y="520" width="230" height="52" rx="10"/><text class="t1" x="155" y="542">🔒 карточка запуска</text><text class="t2" x="155" y="558">джоба · параметры</text></g>
+    <g><rect class="n-a" x="40" y="610" width="230" height="52" rx="10"/><text class="t1" x="155" y="632">зелёная → план закрыт</text><text class="t2" x="155" y="648">→ предложение архивации</text></g>
+    <g><rect class="n-a" x="320" y="610" width="210" height="44" rx="10"/><text class="t1" x="425" y="632">RED → диагноз</text><text class="t2" x="425" y="648">категория · fixable · связанность</text></g>
+    <g><rect class="n-a" x="320" y="680" width="210" height="44" rx="10"/><text class="t1" x="425" y="702">в диффе → фикс в тот же PR</text><text class="t2" x="425" y="718">✏3 см. красную стрелку</text></g>
+    <g><rect class="n-a" x="580" y="680" width="240" height="44" rx="10"/><text class="t1" x="700" y="702">посторонняя → тех-PR</text><text class="t2" x="700" y="718">новый PR → карточка «пуш+PR»</text></g>
+    <g><rect class="n-d" x="40" y="840" width="780" height="40" rx="10" style="stroke:#ef4444;stroke-width:3"/><text class="t1" x="430" y="858">✏4 план — только дефолт .qwen/tmp/ship-kit/PRJ-42/plan.md (каскад не показан)</text><text class="t2" x="430" y="873">в скиллах: директория выбирается каскадом</text></g>
+  </svg>
+
+  <h2 class="now">СТАЛО — после правки</h2>
+  <svg viewBox="0 0 860 890" role="img" aria-label="Схема прогона после правки">
+    <defs>
+      <marker id="mB" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#64748b"/></marker>
+      <marker id="mRB" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0,0 L9,4 L0,9 z" fill="#ef4444"/></marker>
+      <marker id="mDB" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#94a3b8"/></marker>
+    </defs>
+
+    <path class="ed" d="M160 60 L350 100" marker-end="url(#mB)"/>
+    <path class="ed" d="M390 60 L440 100" marker-end="url(#mB)"/>
+    <path class="ed" d="M440 156 L440 180" marker-end="url(#mB)"/>
+    <path class="ed" d="M320 228 L150 260" marker-end="url(#mB)"/>
+    <text class="lbl" x="150" y="246" text-anchor="middle">слот набора</text>
+    <path class="ed" d="M145 312 L145 350" marker-end="url(#mB)"/>
+    <path class="ed" d="M212 350 L212 324" marker-end="url(#mB)"/>
+    <text class="lbl" x="220" y="338">продолжить →</text>
+    <path class="ed" d="M590 206 L645 260" marker-end="url(#mB)"/>
+    <text class="lbl" x="558" y="230" text-anchor="middle">слот pr</text>
+    <path class="ed" d="M440 228 L158 518" marker-end="url(#mB)"/>
+    <text class="lbl" x="302" y="372" text-anchor="middle">слот ci</text>
+    <path class="ed" d="M725 312 L725 350" marker-end="url(#mB)"/>
+    <text class="lbl" x="733" y="336">«да»: пуш + PR</text>
+    <path class="ed" d="M725 402 L725 440" marker-end="url(#mB)"/>
+    <text class="lbl" x="733" y="424">замечания</text>
+    <path class="ed" d="M620 462 L572 466" marker-end="url(#mB)"/>
+    <path class="ed" d="M455 492 L455 520" marker-end="url(#mB)"/>
+    <text class="lbl" x="463" y="510">«да»</text>
+    <path class="ed" d="M560 520 L560 498" marker-end="url(#mB)"/>
+    <text class="lbl" x="568" y="514">⟲ снова ждёт MERGED</text>
+    <path class="ed" d="M650 350 L650 318" marker-end="url(#mB)"/>
+    <text class="lbl" x="640" y="340" text-anchor="end">MERGED → следующий слот</text>
+    <path class="ed" d="M155 572 L155 610" marker-end="url(#mB)"/>
+    <text class="lbl" x="163" y="596">зелёная</text>
+    <path class="ed" d="M270 546 L345 610" marker-end="url(#mB)"/>
+    <text class="lbl" x="278" y="582">RED</text>
+    <path class="ed" d="M425 654 L425 680" marker-end="url(#mB)"/>
+    <path class="ed" d="M530 632 L600 680" marker-end="url(#mB)"/>
+    <text class="lbl" x="540" y="654">посторонняя</text>
+    <path class="edd" d="M290 192 L245 130" marker-end="url(#mDB)"/>
+    <path class="edd" d="M140 100 L333 62" marker-end="url(#mDB)"/>
+
+    <path class="edr" d="M425 724 L425 750" marker-end="url(#mRB)"/>
+    <path class="edr" d="M550 776 L845 776 L845 390 L831 390" marker-end="url(#mRB)"/>
+    <text class="lblr" x="560" y="768">✏3 «да»: пуш в тот же PR → снова ждёт MERGED</text>
+
+    <g><rect class="n-h" x="60" y="16" width="200" height="44" rx="10"/><text class="t1" x="160" y="34">/ship-kit-task PRJ-42</text><text class="t2" x="160" y="50">старт: задание + MCP-алиасы</text></g>
+    <g><rect class="n-h" x="300" y="16" width="180" height="44" rx="10"/><text class="t1" x="390" y="34">продолжи PRJ-42</text><text class="t2" x="390" y="50">возврат из «ДАЛЬШЕ»</text></g>
+    <g><rect class="n-d" x="40" y="100" width="200" height="48" rx="10"/><text class="t1" x="140" y="120">ДАЛЬШЕ: продолжи PRJ-42</text><text class="t2" x="140" y="136">пауза · новая сессия</text></g>
+    <g><rect class="n-g" x="290" y="100" width="300" height="56" rx="10" style="stroke:#ef4444;stroke-width:3"/><text class="t1" x="440" y="120">✏1 чек-лист / остаток плана → одно «да»</text><text class="t2" x="440" y="136">внешние скиллы/профиль или «продолжи» — «да»;</text><text class="t2" x="440" y="150">простой старт без внешних — без вопроса</text></g>
+    <g><rect class="n-a" x="290" y="180" width="300" height="48" rx="10" style="stroke:#ef4444;stroke-width:3"/><text class="t1" x="440" y="202">✏2 следующий слот — ведёт модель</text><text class="t2" x="440" y="218">после «да» — сама до конца плана</text></g>
+    <g><rect class="n-a" x="40" y="260" width="210" height="52" rx="10"/><text class="t1" x="145" y="282">слот набора</text><text class="t2" x="145" y="298">spec · apply · …</text></g>
+    <g><rect class="n-g" x="40" y="350" width="210" height="44" rx="10"/><text class="t1" x="145" y="370">ревью спеки</text><text class="t2" x="145" y="386">после слота spec</text></g>
+    <g><rect class="n-g" x="620" y="260" width="210" height="52" rx="10"/><text class="t1" x="725" y="282">🔒 карточка «пуш+PR»</text><text class="t2" x="725" y="298">ветка · коммиты · целевая</text></g>
+    <g><rect class="n-a" x="620" y="350" width="210" height="52" rx="10"/><text class="t1" x="725" y="372">ждёт MERGED</text><text class="t2" x="725" y="388">опрос сам, без вопросов</text></g>
+    <g><rect class="n-a" x="620" y="440" width="210" height="44" rx="10"/><text class="t1" x="725" y="460">пришли чужие замечания</text><text class="t2" x="725" y="476">свои — по id-журналу</text></g>
+    <g><rect class="n-g" x="340" y="440" width="230" height="52" rx="10"/><text class="t1" x="455" y="462">🔒 карточка фикса</text><text class="t2" x="455" y="478">черновики · коммиты · замечания</text></g>
+    <g><rect class="n-a" x="340" y="520" width="230" height="52" rx="10"/><text class="t1" x="455" y="542">ответы → пуш → resolve</text><text class="t2" x="455" y="558">id ответов — в журнал</text></g>
+    <g><rect class="n-g" x="40" y="520" width="230" height="52" rx="10"/><text class="t1" x="155" y="542">🔒 карточка запуска</text><text class="t2" x="155" y="558">джоба · параметры</text></g>
+    <g><rect class="n-a" x="40" y="610" width="230" height="52" rx="10"/><text class="t1" x="155" y="632">зелёная → план закрыт</text><text class="t2" x="155" y="648">→ предложение архивации</text></g>
+    <g><rect class="n-a" x="320" y="610" width="210" height="44" rx="10"/><text class="t1" x="425" y="632">RED → диагноз</text><text class="t2" x="425" y="648">категория · fixable · связанность</text></g>
+    <g><rect class="n-a" x="320" y="680" width="210" height="44" rx="10"/><text class="t1" x="425" y="702">в диффе → фикс в тот же PR</text><text class="t2" x="425" y="718">✏3 вниз — своя карточка пуша</text></g>
+    <g><rect class="n-a" x="580" y="680" width="240" height="44" rx="10"/><text class="t1" x="700" y="702">посторонняя → тех-PR</text><text class="t2" x="700" y="718">новый PR → карточка «пуш+PR»</text></g>
+    <g><rect class="n-g" x="320" y="750" width="230" height="52" rx="10" style="stroke:#ef4444;stroke-width:3"/><text class="t1" x="435" y="772">✏3 🔒 карточка пуша фикса</text><text class="t2" x="435" y="788">новый узел · пуш в ту же ветку PR</text></g>
+    <g><rect class="n-d" x="40" y="840" width="780" height="40" rx="10" style="stroke:#ef4444;stroke-width:3"/><text class="t1" x="430" y="858">✏4 план — каскад: задание &gt; конвенция &gt; дефолт .qwen/tmp/ship-kit/&lt;КЛЮЧ&gt;/</text><text class="t2" x="430" y="873">определённая конвенцией директория — с уровнем ПРОЕКТ</text></g>
+  </svg>
+
+  <div class="plain">
+    <b>Простыми словами — что было не так и что теперь:</b>
+    <ol>
+      <li><b>Подтверждение плана.</b> Было: схема показывала, что перед запуском всегда спрашивают «да». На самом деле «да» про план спрашивают только когда в задании перечислены другие скиллы или когда возвращаешься со «продолжи»; простой запуск идёт сразу. Теперь подпись говорит именно это.</li>
+      <li><b>Кто ведёт шаги.</b> Было: блок назывался «диспетчер» — такого скилла в комплекте нет. Теперь: «следующий слот — ведёт модель».</li>
+      <li><b>Фикс упавшей сборки.</b> Было: стрелка вела в карточку «пуш+PR» — будто под фикс создаётся новый PR. На самом деле правка едет в уже открытый PR, нового PR нет. Теперь у этого пути своя карточка пуша фикса, после неё — снова ожидание MERGED.</li>
+      <li><b>Где лежит план.</b> Было: показан только путь по умолчанию. Теперь подписан порядок выбора места: задание → конвенция проекта → путь по умолчанию.</li>
+    </ol>
+    Скиллы во всех четырёх местах уже работали правильно — правились только подписи и стрелки схемы.
+  </div>
+</div>
