@@ -17,7 +17,7 @@
 | 10 | [kjozsa/jenkins-mcp](https://github.com/kjozsa/jenkins-mcp) | PyPI, CSRF crumb, карточки Smithery/Glama |
 | 5–2 | [truxt-ai/jenkins-mcp-server](https://github.com/truxt-ai/jenkins-mcp-server) (архив), [2001adarsh/jenkins-mcp-go](https://github.com/2001adarsh/jenkins-mcp-go) (Go), [grglzrv/jenkins-mcp-server](https://github.com/grglzrv/jenkins-mcp-server) (Rego-policy), [mcpland/jenkins-mcp](https://github.com/mcpland/jenkins-mcp) | Ниши: Go-бинарь с flaky-тестами; secure-by-design; 23 инструмента + read-only |
 
-Вне GitHub: npm-пакеты с 200–800 скач./мес ([@mister-good-deal/host-mcp-jenkins](https://www.npmjs.com/package/@mister-good-deal/host-mcp-jenkins) — плагин-функциональность без плагина, [@martin4455/jenkins-mcp-ro](https://www.npmjs.com/package/@martin4455/jenkins-mcp-ro) — read-only с keyring, [@znmin/jenkins-mcp-server](https://www.npmjs.com/package/@znmin/jenkins-mcp-server) — Pipeline Replay). Исходники npm-пакетов — на странице пакета, вкладка Repository.
+Вне GitHub: npm-пакеты с 200–800 скач./мес — ссылки ведут прямо на их GitHub-репозитории (поле repository из package.json, сверено с npm-реестром 2026-11-27): [@mister-good-deal/host-mcp-jenkins](https://github.com/mister-good-deal/host-mcp-jenkins) — плагин-функциональность без плагина, [@martin4455/jenkins-mcp-ro](https://github.com/luskan/jenkins-mcp-ro) — read-only с keyring (репо под аккаунтом luskan, скоуп npm — martin4455), [@znmin/jenkins-mcp-server](https://github.com/znmin/jenkins-mcp-server) — Pipeline Replay.
 
 Победитель по звёздам — lanbaoshen/mcp-jenkins. Оговорка: официальный плагин отстаёт всего на 43★, но растёт быстрее.
 
