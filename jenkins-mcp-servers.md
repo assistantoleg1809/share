@@ -8,18 +8,20 @@
 
 | ★ | Проект | Суть |
 |--:|---|---|
-| 164 | lanbaoshen/mcp-jenkins (Python, MIT) | Победитель — standalone-сервер, 34 инструмента, PyPI 184k загрузок |
-| 121 | jenkinsci/mcp-server-plugin (Java, MIT) | Официальный плагин в org jenkinsci: Jenkins сам становится MCP-сервером; самый активный (пуш 2026-11-26, 81 форк) |
-| 32 | Jordan-Jarvis/jenkins-mcp-enterprise | Мульти-инстанс, downstream-дерево, диагностика падений, Qdrant semantic search |
-| 19 | kud/mcp-jenkins (TS) | 39 инструментов; лидер по usage — npm @kud/mcp-jenkins, 17k скач./мес при 19★ |
-| 15 | hekmon8/Jenkins-server-mcp | Самый ранний (2024-12), README не читается |
-| 14 | AshwiniGhuge3012/jenkins-mcp-server | Folder-поддержка, стриминг консоли, артефакты |
-| 10 | kjozsa/jenkins-mcp | PyPI, CSRF crumb, карточки Smithery/Glama |
-| 5–2 | truxt-ai, jenkins-mcp-go (Go), grglzrv (Reo-policy), mcpland | Ниши: Go-бинарь с flaky-тестами; secure-by-design; 23 инструмента + read-only |
+| 164 | [lanbaoshen/mcp-jenkins](https://github.com/lanbaoshen/mcp-jenkins) (Python, MIT) | Победитель — standalone-сервер, 34 инструмента, PyPI 184k загрузок |
+| 121 | [jenkinsci/mcp-server-plugin](https://github.com/jenkinsci/mcp-server-plugin) (Java, MIT) | Официальный плагин в org jenkinsci: Jenkins сам становится MCP-сервером; самый активный (пуш 2026-11-26, 81 форк) |
+| 32 | [Jordan-Jarvis/jenkins-mcp-enterprise](https://github.com/Jordan-Jarvis/jenkins-mcp-enterprise) | Мульти-инстанс, downstream-дерево, диагностика падений, Qdrant semantic search |
+| 19 | [kud/mcp-jenkins](https://github.com/kud/mcp-jenkins) (TS) | 39 инструментов; лидер по usage — npm @kud/mcp-jenkins, 17k скач./мес при 19★ |
+| 15 | [hekmon8/Jenkins-server-mcp](https://github.com/hekmon8/Jenkins-server-mcp) | Самый ранний (2024-12), README не читается |
+| 14 | [AshwiniGhuge3012/jenkins-mcp-server](https://github.com/AshwiniGhuge3012/jenkins-mcp-server) | Folder-поддержка, стриминг консоли, артефакты |
+| 10 | [kjozsa/jenkins-mcp](https://github.com/kjozsa/jenkins-mcp) | PyPI, CSRF crumb, карточки Smithery/Glama |
+| 5–2 | [truxt-ai/jenkins-mcp-server](https://github.com/truxt-ai/jenkins-mcp-server) (архив), [2001adarsh/jenkins-mcp-go](https://github.com/2001adarsh/jenkins-mcp-go) (Go), [grglzrv/jenkins-mcp-server](https://github.com/grglzrv/jenkins-mcp-server) (Rego-policy), [mcpland/jenkins-mcp](https://github.com/mcpland/jenkins-mcp) | Ниши: Go-бинарь с flaky-тестами; secure-by-design; 23 инструмента + read-only |
 
-Вне GitHub: npm-пакеты с 200–800 скач./мес (@mister-good-deal/host-mcp-jenkins — плагин-функциональность без плагина, @martin4455/jenkins-mcp-ro — read-only с keyring, @znmin/jenkins-mcp-server — Pipeline Replay).
+Вне GitHub: npm-пакеты с 200–800 скач./мес ([@mister-good-deal/host-mcp-jenkins](https://www.npmjs.com/package/@mister-good-deal/host-mcp-jenkins) — плагин-функциональность без плагина, [@martin4455/jenkins-mcp-ro](https://www.npmjs.com/package/@martin4455/jenkins-mcp-ro) — read-only с keyring, [@znmin/jenkins-mcp-server](https://www.npmjs.com/package/@znmin/jenkins-mcp-server) — Pipeline Replay). Исходники npm-пакетов — на странице пакета, вкладка Repository.
 
 Победитель по звёздам — lanbaoshen/mcp-jenkins. Оговорка: официальный плагин отстаёт всего на 43★, но растёт быстрее.
+
+Все имена в колонке «Проект» — кликабельные ссылки на код (пути сверены с GitHub API 2026-11-27). Нюансы: truxt-ai/jenkins-mcp-server заархивирован (read-only, последний пуш 2025-04-04); GitHub mcpland/jenkins-mcp отстаёт от npm-релизов (npm 0.2.1 новее последнего пуша 2026-03-17).
 
 ## Обзор: lanbaoshen/mcp-jenkins
 
@@ -87,10 +89,10 @@ run_groovy_script — опасный инструмент (полный дост
 
 | Сценарий | Выбор |
 |---|---|
-| Подключить агента к существующему Jenkins без правок на сервере | lanbaoshen/mcp-jenkins (uvx одной строкой) |
-| Контролируемый enterprise-Jenkins, можно ставить плагины | jenkinsci/mcp-server-plugin — официальный, без отдельного процесса |
-| Максимальное покрытие API, TS-стек | kud/mcp-jenkins (39 инструментов) |
-| Мульти-инстанс + авто-диагностика падений | Jordan-Jarvis/jenkins-mcp-enterprise |
+| Подключить агента к существующему Jenkins без правок на сервере | [lanbaoshen/mcp-jenkins](https://github.com/lanbaoshen/mcp-jenkins) (uvx одной строкой) |
+| Контролируемый enterprise-Jenkins, можно ставить плагины | [jenkinsci/mcp-server-plugin](https://github.com/jenkinsci/mcp-server-plugin) — официальный, без отдельного процесса |
+| Максимальное покрытие API, TS-стек | [kud/mcp-jenkins](https://github.com/kud/mcp-jenkins) (39 инструментов) |
+| Мульти-инстанс + авто-диагностика падений | [Jordan-Jarvis/jenkins-mcp-enterprise](https://github.com/Jordan-Jarvis/jenkins-mcp-enterprise) |
 
 ## Источники
 
